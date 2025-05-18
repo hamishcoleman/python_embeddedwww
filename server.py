@@ -83,9 +83,9 @@ class Pages:
 
 class PagesError(Pages):
     @classmethod
-    def not_found(cls):
+    def generic(cls, code):
         self = cls()
-        self.code = HTTPStatus.NOT_FOUND
+        self.code = code
         return self
 
     def handle(self, server):
@@ -135,7 +135,7 @@ class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         try:
             handler = self.handlers[self.path]
         except KeyError:
-            handler = PagesError.not_found()
+            handler = PagesError.generic(HTTPStatus.NOT_FOUND)
         return handler
 
 
@@ -235,6 +235,9 @@ class PagesLogin(Pages):
              <th>
              <td>Bad Login Attempt
             """
+            code = HTTPStatus.UNAUTHORIZED
+        else:
+            code = HTTPStatus.OK
 
         data += b"""
            </table>
@@ -242,7 +245,7 @@ class PagesLogin(Pages):
           </body>
         """
 
-        server.send_response(HTTPStatus.OK)
+        server.send_response(code)
         server.send_header('Content-type', "text/html; charset=utf-8")
         server.end_headers()
         server.wfile.write(data)
@@ -251,8 +254,7 @@ class PagesLogin(Pages):
 class PagesLogout(Pages):
     def handle(self, server):
         if server.command != "POST":
-            # TODO: send a message "action not acceptable"
-            server.send_error(HTTPStatus.NOT_FOUND)
+            server.send_error(HTTPStatus.METHOD_NOT_ALLOWED)
             return
 
         length = int(server.headers['Content-Length'])
@@ -313,7 +315,7 @@ class PagesChat(Pages):
         session = server.config.auth.request2session(server)
         if session.state != "login":
             # TODO: redirect to login page
-            server.send_error(HTTPStatus.NOT_FOUND)
+            server.send_error(HTTPStatus.UNAUTHORIZED)
             return
 
         if server.command == "POST":
