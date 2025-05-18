@@ -17,12 +17,23 @@ import uuid
 from http import HTTPStatus
 
 
+class Session:
+    def __init__(self):
+        self.id = None
+        self.data = None
+        self.state = "logout"
+
+    @property
+    def user(self):
+        return self.data["user"]
+
+
 class Authenticator:
     def __init__(self):
         self.sessions = {}
         # TODO: param to load auth table
 
-    def check_login(self, user, password):
+    def _check_login(self, user, password):
         # TODO:
         # - lookup user/password in auth table
         if user != "test":
@@ -32,22 +43,38 @@ class Authenticator:
 
         return True
 
-    def new_session(self, user):
-        random = uuid.uuid4().bytes
-        sessionid = base64.urlsafe_b64encode(random).strip(b"=").decode("utf8")
-
-        self.sessions[sessionid] = {
-            "user": user,
-        }
-
-        return sessionid
-
-    def get_session(self, sessionid):
-        return self.sessions[sessionid]
-
     def end_session(self, sessionid):
         del self.sessions[sessionid]
 
+    def request2session(self, request):
+        session = Session()
+        session.id = request.get_cookie("sessionid")
+        if session.id:
+            try:
+                session.data = self.sessions[session.id]
+                session.state = "login"
+            except KeyError:
+                session.state = "logout"
+        return session
+
+    def login2session(self, response, user, password):
+        session = Session()
+        if not self._check_login(user, password):
+            session.state = "bad"
+            return session
+        session.state = "login"
+
+        rnd = uuid.uuid4().bytes
+        session.id = base64.urlsafe_b64encode(rnd).strip(b"=").decode("utf8")
+        session.data = {
+            "user": user,
+        }
+
+        # Persist the session
+        response.send_cookie("sessionid", session.id, SameSite="Lax")
+        self.sessions[session.id] = session.data
+
+        return session
 
 
 class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
@@ -118,27 +145,11 @@ class SimpleSite(BetterHTTPRequestHandler):
     def do_path_login(self):
         if self.command == "POST":
             form = self.get_formdata()
-
             user = form[b"user"][0].decode("utf8")
             password = form[b"pass"][0].decode("utf8")
-            if self.config.auth.check_login(user, password):
-                login_state = "login"
-                sessionid = self.config.auth.new_session(user)
-                self.send_cookie("sessionid", sessionid, SameSite="Lax")
-                session = self.config.auth.get_session(sessionid)
-            else:
-                login_state = "bad"
-                sessionid = None
-                session = None
+            session = self.config.auth.login2session(self, user, password)
         else:
-            sessionid = self.get_cookie("sessionid")
-            try:
-                session = self.config.auth.get_session(sessionid)
-                login_state = "login"
-            except KeyError:
-                sessionid = None
-                session = None
-                login_state = "logout"
+            session = self.config.auth.request2session(self)
 
         data = b""
         data += b"""<!DOCTYPE html>
@@ -149,7 +160,7 @@ class SimpleSite(BetterHTTPRequestHandler):
           <body>
         """
 
-        if login_state == "login":
+        if session.state == "login":
             data += b"""
              <form method="post" action="login/logout">
              <table>
@@ -189,12 +200,12 @@ class SimpleSite(BetterHTTPRequestHandler):
              <td>{cookie_uuid}
             """.encode("utf8")
 
-        if login_state == "login":
+        if session.state == "login":
             data += f"""
             <tr>
             <tr>
              <th align=right><label for="user">Username:</label>
-             <td>{session["user"]}
+             <td>{session.user}
             <tr>
             <tr>
              <th>
@@ -214,7 +225,7 @@ class SimpleSite(BetterHTTPRequestHandler):
              <td align=right><input type="submit" value="Login">
             """
 
-        if login_state == "bad":
+        if session.state == "bad":
             data += b"""
             <tr>
              <th>
@@ -233,22 +244,21 @@ class SimpleSite(BetterHTTPRequestHandler):
         self.wfile.write(data)
 
     def do_path_logout(self):
-        if self.command == "POST":
-            length = int(self.headers['Content-Length'])
-            data = self.rfile.read(length)
-
-            sessionid = self.get_cookie("sessionid")
-            try:
-                self.config.auth.end_session(sessionid)
-                sessionid = None
-                login_state = "logout"
-            except KeyError:
-                sessionid = None
-                login_state = "bad"
-        else:
+        if self.command != "POST":
             # TODO: send a message "action not acceptable"
             self.send_error(HTTPStatus.NOT_FOUND)
             return
+
+        length = int(self.headers['Content-Length'])
+        data = self.rfile.read(length)
+
+        session = self.config.auth.request2session(self)
+
+        try:
+            self.config.auth.end_session(session.id)
+            session.state = "logout"
+        except KeyError:
+            session.state = "bad"
 
         data = b""
         data += b"""<!DOCTYPE html>
@@ -260,7 +270,7 @@ class SimpleSite(BetterHTTPRequestHandler):
            <table>
         """
 
-        if login_state == "logout":
+        if session.state == "logout":
             data += b"""
             <tr>
              <th align=right>Logged out
@@ -270,7 +280,7 @@ class SimpleSite(BetterHTTPRequestHandler):
              <td align=right><a href="/login">Login</a>
             """
 
-        if login_state == "bad":
+        if session.state == "bad":
             data += b"""
             <tr>
              <th>
