@@ -114,6 +114,17 @@ class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         form = urllib.parse.parse_qs(data)
         return form
 
+    def _handler_not_found(_, self):
+        self.send_error(HTTPStatus.NOT_FOUND)
+        return
+
+    def get_request_handler(self):
+        try:
+            handler = self.handlers[self.path]
+        except KeyError:
+            handler = self._handler_not_found
+        return handler
+
 
 class SimpleSite(BetterHTTPRequestHandler):
 
@@ -304,40 +315,22 @@ class SimpleSite(BetterHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b"A Testable Page")
 
-    def get_request_handler(self):
-        handlers = {
-            "/login": self.do_path_login,
-            "/login/logout": self.do_path_logout,
-            "/test": self.do_path_test,
-        }
+    handlers = {
+        "/login": do_path_login,
+        "/login/logout": do_path_logout,
+        "/test": do_path_test,
+    }
 
-        try:
-            handler = handlers[self.path]
-        except KeyError:
-            handler = None
-
-        return handler
+    def handle_request(self):
+        self._check_uuid()
+        handler = self.get_request_handler()
+        handler(self)
 
     def do_GET(self):
-        self._check_uuid()
-
-        handler = self.get_request_handler()
-        if handler is None:
-            self.send_error(HTTPStatus.NOT_FOUND)
-            return
-
-        handler()
-        return
+        self.handle_request()
 
     def do_POST(self):
-        self._check_uuid()
-
-        handler = self.get_request_handler()
-        if handler is None:
-            self.send_error(HTTPStatus.NOT_FOUND)
-            return
-
-        handler()
+        self.handle_request()
 
 
 class SimpleSiteConfig:
