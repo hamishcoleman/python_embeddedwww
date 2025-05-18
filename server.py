@@ -305,6 +305,53 @@ class PagesLogout(Pages):
         server.wfile.write(data)
 
 
+class PagesChat(Pages):
+    def __init__(self):
+        self.chat = []
+
+    def handle(self, server):
+        session = server.config.auth.request2session(server)
+        if session.state != "login":
+            # TODO: redirect to login page
+            server.send_error(HTTPStatus.NOT_FOUND)
+            return
+
+        if server.command == "POST":
+            form = server.get_formdata()
+            chat = form[b"chat"][0].decode("utf8")
+            note = session.user + ":" + chat
+            self.chat.append(note)
+
+        data = """<!DOCTYPE html>
+          <html>
+          <head>
+           <title>Chat</title>
+          </head>
+          <body>
+          <table>
+        """
+
+        for i in self.chat:
+            data += f"""
+             <tr><td>{i}
+            """
+
+        data += """
+         <tr>
+          <td>
+           <form method="post">
+            <input type="text" id="chat" name="chat">
+            <input type="submit" value="Submit">
+           </form>
+         </table>
+        """
+
+        server.send_response(HTTPStatus.OK)
+        server.send_header('Content-type', "text/html; charset=utf-8")
+        server.end_headers()
+        server.wfile.write(data.encode("utf8"))
+
+
 class SimpleSite(BetterHTTPRequestHandler):
 
     def __init__(self, config, *args, **kwargs):
@@ -333,6 +380,8 @@ class SimpleSite(BetterHTTPRequestHandler):
         self.send_cookie("uuid", cookie, **attribs)
 
     handlers = {
+        "/chat/1": PagesChat(),
+        "/chat/2": PagesChat(),
         "/login": PagesLogin(),
         "/login/logout": PagesLogout(),
         "/test": PagesTest(),
