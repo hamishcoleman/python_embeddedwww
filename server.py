@@ -49,12 +49,8 @@ class Authenticator:
         del self.sessions[sessionid]
 
 
-class SimpleSite(http.server.BaseHTTPRequestHandler):
 
-    def __init__(self, config, *args, **kwargs):
-        self.config = config
-        super().__init__(*args, **kwargs)
-
+class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     # The default method happily appends the responce /after/ adding headers,
     # which results in an invalid reply packet
     def send_response_only(self, code, message=None):
@@ -81,6 +77,24 @@ class SimpleSite(http.server.BaseHTTPRequestHandler):
         value = self.headers.get_param(name, header="Cookie")
         return value
 
+    def get_formdata(self):
+        if self.command != "POST":
+            # No post data can exist
+            return {}
+
+        length = int(self.headers['Content-Length'])
+        data = self.rfile.read(length)
+        form = urllib.parse.parse_qs(data)
+        return form
+
+
+class SimpleSite(BetterHTTPRequestHandler):
+
+    def __init__(self, config, *args, **kwargs):
+        # save the config object
+        self.config = config
+        super().__init__(*args, **kwargs)
+
     def _check_uuid(self):
         """Ensure that every visitor gets a unique identifier"""
         if self.get_cookie("uuid") is not None:
@@ -103,9 +117,7 @@ class SimpleSite(http.server.BaseHTTPRequestHandler):
 
     def do_path_login(self):
         if self.command == "POST":
-            length = int(self.headers['Content-Length'])
-            data = self.rfile.read(length)
-            form = urllib.parse.parse_qs(data)
+            form = self.get_formdata()
 
             user = form[b"user"][0].decode("utf8")
             password = form[b"pass"][0].decode("utf8")
