@@ -77,6 +77,23 @@ class Authenticator:
         return session
 
 
+class Pages:
+    pass
+
+
+class PagesError(Pages):
+    @classmethod
+    def not_found(cls):
+        self = cls()
+        self.code = HTTPStatus.NOT_FOUND
+        return self
+
+    def handle(self, server):
+        # TODO:
+        # - message, explain
+        server.send_error(self.code)
+
+
 class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     # The default method happily appends the responce /after/ adding headers,
     # which results in an invalid reply packet
@@ -114,53 +131,31 @@ class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         form = urllib.parse.parse_qs(data)
         return form
 
-    def _handler_not_found(_, self):
-        self.send_error(HTTPStatus.NOT_FOUND)
-        return
-
     def get_request_handler(self):
         try:
             handler = self.handlers[self.path]
         except KeyError:
-            handler = self._handler_not_found
+            handler = PagesError.not_found()
         return handler
 
 
-class SimpleSite(BetterHTTPRequestHandler):
+class PagesTest(Pages):
+    def handle(self, server):
+        server.send_response(HTTPStatus.OK)
+        server.send_header('Content-type', "text/html")
+        server.end_headers()
+        server.wfile.write(b"A Testable Page")
 
-    def __init__(self, config, *args, **kwargs):
-        # save the config object
-        self.config = config
-        super().__init__(*args, **kwargs)
 
-    def _check_uuid(self):
-        """Ensure that every visitor gets a unique identifier"""
-        if self.get_cookie("uuid") is not None:
-            return
-
-        random = uuid.uuid4().bytes
-        cookie = base64.urlsafe_b64encode(random).strip(b"=").decode("utf8")
-
-        attribs = {
-            "Expires": "Mon, 1-Jan-2035 00:00:00 GMT",
-            "HttpOnly": None,
-            "Max-Age": 315360000,
-            "SameSite": "Lax",
-        }
-
-        if self.config.cookie_domain:
-            attribs["Domain"] = self.config.cookie_domain
-
-        self.send_cookie("uuid", cookie, **attribs)
-
-    def do_path_login(self):
-        if self.command == "POST":
-            form = self.get_formdata()
+class PagesLogin(Pages):
+    def handle(self, server):
+        if server.command == "POST":
+            form = server.get_formdata()
             user = form[b"user"][0].decode("utf8")
             password = form[b"pass"][0].decode("utf8")
-            session = self.config.auth.login2session(self, user, password)
+            session = server.config.auth.login2session(server, user, password)
         else:
-            session = self.config.auth.request2session(self)
+            session = server.config.auth.request2session(server)
 
         data = b"""<!DOCTYPE html>
           <html>
@@ -183,7 +178,7 @@ class SimpleSite(BetterHTTPRequestHandler):
          <table>
           <tr>
            <th align=right>Client:
-           <td>{self.client_address}
+           <td>{server.client_address}
         """.encode("utf8")
 
         # TODO:
@@ -191,17 +186,17 @@ class SimpleSite(BetterHTTPRequestHandler):
         #   client_address
 
         # TODO:
-        # if self.client_address[0] == "127.0.0.1":
+        # if server.client_address[0] == "127.0.0.1":
         #     data += pid/processname/args
 
-        host = self.headers["Host"]
+        host = server.headers["Host"]
         data += f"""
           <tr>
            <th align=right>Host:
            <td>{host}
         """.encode("utf8")
 
-        cookie_uuid = self.get_cookie("uuid")
+        cookie_uuid = server.get_cookie("uuid")
         if cookie_uuid:
             data += f"""
             <tr>
@@ -247,24 +242,26 @@ class SimpleSite(BetterHTTPRequestHandler):
           </body>
         """
 
-        self.send_response(HTTPStatus.OK)
-        self.send_header('Content-type', "text/html; charset=utf-8")
-        self.end_headers()
-        self.wfile.write(data)
+        server.send_response(HTTPStatus.OK)
+        server.send_header('Content-type', "text/html; charset=utf-8")
+        server.end_headers()
+        server.wfile.write(data)
 
-    def do_path_logout(self):
-        if self.command != "POST":
+
+class PagesLogout(Pages):
+    def handle(self, server):
+        if server.command != "POST":
             # TODO: send a message "action not acceptable"
-            self.send_error(HTTPStatus.NOT_FOUND)
+            server.send_error(HTTPStatus.NOT_FOUND)
             return
 
-        length = int(self.headers['Content-Length'])
-        data = self.rfile.read(length)
+        length = int(server.headers['Content-Length'])
+        data = server.rfile.read(length)
 
-        session = self.config.auth.request2session(self)
+        session = server.config.auth.request2session(server)
 
         try:
-            self.config.auth.end_session(session.id)
+            server.config.auth.end_session(session.id)
             session.state = "logout"
         except KeyError:
             session.state = "bad"
@@ -302,27 +299,49 @@ class SimpleSite(BetterHTTPRequestHandler):
           </body>
         """
 
-        self.send_response(HTTPStatus.OK)
-        self.send_header('Content-type', "text/html; charset=utf-8")
-        self.end_headers()
-        self.wfile.write(data)
+        server.send_response(HTTPStatus.OK)
+        server.send_header('Content-type', "text/html; charset=utf-8")
+        server.end_headers()
+        server.wfile.write(data)
 
-    def do_path_test(self):
-        self.send_response(HTTPStatus.OK)
-        self.send_header('Content-type', "text/html")
-        self.end_headers()
-        self.wfile.write(b"A Testable Page")
+
+class SimpleSite(BetterHTTPRequestHandler):
+
+    def __init__(self, config, *args, **kwargs):
+        # save the config object
+        self.config = config
+        super().__init__(*args, **kwargs)
+
+    def _check_uuid(self):
+        """Ensure that every visitor gets a unique identifier"""
+        if self.get_cookie("uuid") is not None:
+            return
+
+        random = uuid.uuid4().bytes
+        cookie = base64.urlsafe_b64encode(random).strip(b"=").decode("utf8")
+
+        attribs = {
+            "Expires": "Mon, 1-Jan-2035 00:00:00 GMT",
+            "HttpOnly": None,
+            "Max-Age": 315360000,
+            "SameSite": "Lax",
+        }
+
+        if self.config.cookie_domain:
+            attribs["Domain"] = self.config.cookie_domain
+
+        self.send_cookie("uuid", cookie, **attribs)
 
     handlers = {
-        "/login": do_path_login,
-        "/login/logout": do_path_logout,
-        "/test": do_path_test,
+        "/login": PagesLogin(),
+        "/login/logout": PagesLogout(),
+        "/test": PagesTest(),
     }
 
     def handle_request(self):
         self._check_uuid()
         handler = self.get_request_handler()
-        handler(self)
+        handler.handle(self)
 
     def do_GET(self):
         self.handle_request()
