@@ -162,8 +162,7 @@ class SimpleSite(BetterHTTPRequestHandler):
         else:
             session = self.config.auth.request2session(self)
 
-        data = b""
-        data += b"""<!DOCTYPE html>
+        data = b"""<!DOCTYPE html>
           <html>
           <head>
            <title>Login</title>
@@ -174,15 +173,14 @@ class SimpleSite(BetterHTTPRequestHandler):
         if session.state == "login":
             data += b"""
              <form method="post" action="login/logout">
-             <table>
             """
         else:
             data += b"""
              <form method="post">
-             <table>
             """
 
         data += f"""
+         <table>
           <tr>
            <th align=right>Client:
            <td>{self.client_address}
