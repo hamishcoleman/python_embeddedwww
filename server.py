@@ -321,6 +321,64 @@ class PagesLogin(Pages):
         server.wfile.write(data)
 
 
+class PagesAuthList(Pages):
+    need_auth = True
+
+    def handle(self, server, session):
+        if not session.data.get("admin", False):
+            server.send_error(HTTPStatus.UNAUTHORIZED)
+            return
+
+        if server.command == "POST":
+            form = server.get_formdata()
+            action = form[b"a"][0].decode("utf8")
+
+            action, action_id = action.split("/")
+
+            if action == "del":
+                action_session = Session()
+                action_session.id = action_id
+                server.config.auth.end_session(action_session)
+            else:
+                server.send_error(HTTPStatus.BAD_REQUEST)
+                return
+
+        data = """<!DOCTYPE html>
+          <html>
+          <head>
+           <title>Sessions</title>
+          </head>
+          <body>
+           <form method="post">
+            <table>
+             <tr>
+              <th>ID
+              <th>Data
+              <th>Action
+        """
+
+        for k, v in server.config.auth.sessions.items():
+            data += f"""
+             <tr>
+              <td>{k}
+              <td>{v}
+              <td>
+               <button name="a" value="del/{k}">Del</button>
+            """
+
+        data += """
+            </table>
+           </form>
+          </body>
+         </html>
+        """
+
+        server.send_response(HTTPStatus.OK)
+        server.send_header('Content-type', "text/html; charset=utf-8")
+        server.end_headers()
+        server.wfile.write(data.encode("utf8"))
+
+
 class PagesChat(Pages):
     need_auth = True
 
