@@ -167,7 +167,7 @@ class PagesLogin(Pages):
 
         if session.state == "login":
             data += b"""
-             <form method="post" action="login/logout">
+             <form method="post" action="logout">
             """
         else:
             data += b"""
@@ -285,7 +285,7 @@ class PagesLogout(Pages):
             <tr>
             <tr>
              <th>
-             <td align=right><a href="/login">Login</a>
+             <td align=right><a href="login">Login</a>
             """
 
         if session.state == "bad":
@@ -362,8 +362,8 @@ class SimpleSite(BetterHTTPRequestHandler):
         self.handlers = {
             "/chat/1": PagesChat(),
             "/chat/2": PagesChat(),
-            "/login": PagesLogin(),
-            "/login/logout": PagesLogout(),
+            "/auth/login": PagesLogin(),
+            "/auth/logout": PagesLogout(),
             "/test": PagesTest(),
         }
         super().__init__(*args, **kwargs)
