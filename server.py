@@ -359,6 +359,13 @@ class SimpleSite(BetterHTTPRequestHandler):
     def __init__(self, config, *args, **kwargs):
         # save the config object
         self.config = config
+        self.handlers = {
+            "/chat/1": PagesChat(),
+            "/chat/2": PagesChat(),
+            "/login": PagesLogin(),
+            "/login/logout": PagesLogout(),
+            "/test": PagesTest(),
+        }
         super().__init__(*args, **kwargs)
 
     def _check_uuid(self):
@@ -380,14 +387,6 @@ class SimpleSite(BetterHTTPRequestHandler):
             attribs["Domain"] = self.config.cookie_domain
 
         self.send_cookie("uuid", cookie, **attribs)
-
-    handlers = {
-        "/chat/1": PagesChat(),
-        "/chat/2": PagesChat(),
-        "/login": PagesLogin(),
-        "/login/logout": PagesLogout(),
-        "/test": PagesTest(),
-    }
 
     def handle_request(self):
         self._check_uuid()
