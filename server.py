@@ -77,8 +77,13 @@ class Authenticator:
         session.id = base64.urlsafe_b64encode(rnd).strip(b"=").decode("utf8")
         session.data = data
 
-        # Persist the session
-        response.send_cookie("sessionid", session.id, SameSite="Lax")
+        # Persist the session in the browser
+        response.send_cookie(
+            "sessionid",
+            session.id,
+            SameSite="Lax",
+            Path="/",
+        )
         self.sessions[session.id] = session.data
 
         return session
@@ -377,6 +382,7 @@ class SimpleSite(BetterHTTPRequestHandler):
             "HttpOnly": None,
             "Max-Age": 315360000,
             "SameSite": "Lax",
+            "Path": "/",
         }
 
         if self.config.cookie_domain:
