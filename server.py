@@ -28,6 +28,10 @@ class Session:
     def user(self):
         return self.data["user"]
 
+    @property
+    def has_auth(self):
+        return self.state == "login"
+
 
 class Authenticator:
     def __init__(self):
@@ -152,14 +156,14 @@ class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
     def get_request_handler(self):
         try:
-            handler = self.handlers[self.path]
+            handler = handlers[self.path]
         except KeyError:
             return PagesError.generic(HTTPStatus.NOT_FOUND), None
 
         # TODO: could add handler.need_session and avoid getting session
         session = self.config.auth.request2session(self)
         if handler.need_auth:
-            if session.state != "login":
+            if not session.has_auth:
                 return PagesError.generic(HTTPStatus.UNAUTHORIZED), None
 
         return handler, session
@@ -173,6 +177,37 @@ class PagesTest(Pages):
         server.send_header('Content-type', "text/html")
         server.end_headers()
         server.wfile.write(b"A Testable Page")
+
+
+class PagesMap(Pages):
+    need_auth = False
+
+    def handle(self, server, session):
+        data = """<!DOCTYPE html>
+         <html>
+         <head>
+          <title>Index</title>
+         </head>
+         <body>
+         <ul>
+        """
+
+        for path, handler in sorted(handlers.items()):
+            if not handler.need_auth or session.has_auth:
+                data += f"""
+                 <li><a href="{path}">{path}</a>
+                """
+
+        data += """
+         </ul>
+         </body>
+         </html>
+        """
+
+        server.send_response(HTTPStatus.OK)
+        server.send_header("Content-type", "text/html; charset=utf-8")
+        server.end_headers()
+        server.wfile.write(data.encode("utf8"))
 
 
 class PagesLogin(Pages):
@@ -193,7 +228,7 @@ class PagesLogin(Pages):
           <body>
         """
 
-        if session.state == "login":
+        if session.has_auth:
             data += b"""
              <form method="post" action="logout">
             """
@@ -232,7 +267,7 @@ class PagesLogin(Pages):
              <td>{cookie_uuid}
             """.encode("utf8")
 
-        if session.state == "login":
+        if session.has_auth:
             data += f"""
             <tr>
             <tr>
@@ -368,16 +403,21 @@ class PagesChat(Pages):
         server.wfile.write(data.encode("utf8"))
 
 
+# FIXME: global
+handlers = {
+    "/auth/login": PagesLogin(),
+    "/auth/logout": PagesLogout(),
+    "/auth/list": PagesAuthList(),
+    "/chat/1": PagesChat(),
+    "/chat/2": PagesChat(),
+    "/sitemap": PagesMap(),
+    "/test": PagesTest(),
+}
+
+
 class SimpleSite(BetterHTTPRequestHandler):
 
     def __init__(self, *args, **kwargs):
-        self.handlers = {
-            "/chat/1": PagesChat(),
-            "/chat/2": PagesChat(),
-            "/auth/login": PagesLogin(),
-            "/auth/logout": PagesLogout(),
-            "/test": PagesTest(),
-        }
         super().__init__(*args, **kwargs)
 
     def _check_uuid(self):
