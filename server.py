@@ -32,6 +32,21 @@ class Session:
     def has_auth(self):
         return self.state == "login"
 
+    @classmethod
+    def from_request(cls, request):
+        self = cls()
+        self.id = request.get_cookie("sessionid")
+        return self
+
+    def to_response(self, response):
+        # Persist the session in the browser
+        response.send_cookie(
+            "sessionid",
+            self.id,
+            SameSite="Lax",
+            Path="/",
+        )
+
 
 class Authenticator:
     def __init__(self):
@@ -62,8 +77,7 @@ class Authenticator:
         session.state = "logout"
 
     def request2session(self, request):
-        session = Session()
-        session.id = request.get_cookie("sessionid")
+        session = Session.from_request(request)
         if session.id:
             try:
                 session.data = self.sessions[session.id]
@@ -83,15 +97,9 @@ class Authenticator:
         rnd = uuid.uuid4().bytes
         session.id = base64.urlsafe_b64encode(rnd).strip(b"=").decode("utf8")
         session.data = data
-
-        # Persist the session in the browser
-        response.send_cookie(
-            "sessionid",
-            session.id,
-            SameSite="Lax",
-            Path="/",
-        )
         self.sessions[session.id] = session.data
+
+        session.to_response(response)
 
         return session
 
