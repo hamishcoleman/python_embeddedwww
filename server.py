@@ -22,7 +22,7 @@ class Session:
     def __init__(self):
         self.id = None
         self.data = None
-        self.state = "logout"
+        self.state = None
 
     @property
     def user(self):
@@ -94,19 +94,26 @@ class Pages:
 
 
 class PagesError(Pages):
+    need_auth = False
+
     @classmethod
     def generic(cls, code):
         self = cls()
         self.code = code
         return self
 
-    def handle(self, server):
+    def handle(self, server, session):
         # TODO:
         # - message, explain
         server.send_error(self.code)
 
 
 class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
+    def __init__(self, config, *args, **kwargs):
+        # save the config object
+        self.config = config
+        super().__init__(*args, **kwargs)
+
     # The default method happily appends the responce /after/ adding headers,
     # which results in an invalid reply packet
     def send_response_only(self, code, message=None):
@@ -147,12 +154,21 @@ class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         try:
             handler = self.handlers[self.path]
         except KeyError:
-            handler = PagesError.generic(HTTPStatus.NOT_FOUND)
-        return handler
+            return PagesError.generic(HTTPStatus.NOT_FOUND), None
+
+        # TODO: could add handler.need_session and avoid getting session
+        session = self.config.auth.request2session(self)
+        if handler.need_auth:
+            if session.state != "login":
+                return PagesError.generic(HTTPStatus.UNAUTHORIZED), None
+
+        return handler, session
 
 
 class PagesTest(Pages):
-    def handle(self, server):
+    need_auth = False
+
+    def handle(self, server, session):
         server.send_response(HTTPStatus.OK)
         server.send_header('Content-type', "text/html")
         server.end_headers()
@@ -160,14 +176,14 @@ class PagesTest(Pages):
 
 
 class PagesLogin(Pages):
-    def handle(self, server):
+    need_auth = False
+
+    def handle(self, server, session):
         if server.command == "POST":
             form = server.get_formdata()
             user = form[b"user"][0].decode("utf8")
             password = form[b"pass"][0].decode("utf8")
             session = server.config.auth.login2session(server, user, password)
-        else:
-            session = server.config.auth.request2session(server)
 
         data = b"""<!DOCTYPE html>
           <html>
@@ -264,16 +280,17 @@ class PagesLogin(Pages):
 
 
 class PagesLogout(Pages):
-    def handle(self, server):
+    need_auth = False
+
+    def handle(self, server, session):
         if server.command != "POST":
             server.send_header("Location", "login")
             server.send_error(HTTPStatus.SEE_OTHER)
             return
 
+        # TODO: does http.server take care of keeping session sync?
         length = int(server.headers['Content-Length'])
         data = server.rfile.read(length)
-
-        session = server.config.auth.request2session(server)
 
         try:
             server.config.auth.end_session(session.id)
@@ -309,16 +326,12 @@ class PagesLogout(Pages):
 
 
 class PagesChat(Pages):
+    need_auth = True
+
     def __init__(self):
         self.chat = []
 
-    def handle(self, server):
-        session = server.config.auth.request2session(server)
-        if session.state != "login":
-            # TODO: redirect to login page
-            server.send_error(HTTPStatus.UNAUTHORIZED)
-            return
-
+    def handle(self, server, session):
         if server.command == "POST":
             form = server.get_formdata()
             chat = form[b"chat"][0].decode("utf8")
@@ -357,9 +370,7 @@ class PagesChat(Pages):
 
 class SimpleSite(BetterHTTPRequestHandler):
 
-    def __init__(self, config, *args, **kwargs):
-        # save the config object
-        self.config = config
+    def __init__(self, *args, **kwargs):
         self.handlers = {
             "/chat/1": PagesChat(),
             "/chat/2": PagesChat(),
@@ -392,8 +403,8 @@ class SimpleSite(BetterHTTPRequestHandler):
 
     def handle_request(self):
         self._check_uuid()
-        handler = self.get_request_handler()
-        handler.handle(self)
+        handler, session = self.get_request_handler()
+        handler.handle(self, session)
 
     def do_GET(self):
         self.handle_request()
