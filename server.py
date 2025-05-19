@@ -229,6 +229,12 @@ class PagesLogin(Pages):
                     user,
                     password
                 )
+
+                # Make reloading nicer
+                # TODO: hardcodes the location of this page
+                server.send_header("Location", "login")
+                server.send_error(HTTPStatus.SEE_OTHER)
+                return
             else:
                 try:
                     server.config.auth.end_session(session)
