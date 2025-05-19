@@ -416,7 +416,7 @@ class PagesChat(Pages):
          <tr>
           <td>
            <form method="post">
-            <input type="text" id="chat" name="chat">
+            <input type="text" id="chat" name="chat" autofocus>
             <input type="submit" value="Submit">
            </form>
          </table>
