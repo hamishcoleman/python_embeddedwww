@@ -57,17 +57,33 @@ class Authenticator:
         # TODO:
         # - lookup user/password in auth table
         # - construct data from auth table details
-        if user != "test":
+
+        fake_user = {
+            "admin": {
+                "desc": "A Test Admin",
+                "admin": True,
+            },
+            "user": {
+                "desc": "Test User",
+                "admin": False,
+            },
+        }
+        fake_pass = {
+            "admin": "1234",
+            "user": "1234",
+        }
+
+        if user not in fake_pass:
             return None
-        if password != "1234":
+        if password != fake_pass[user]:
             return None
+
+        data = fake_user[user].copy()
+        data["user"] = user
 
         # We enforce that the session data is readonly as that will allow
         # the use of JWT (or similar) to populate the session data
-        data = MappingProxyType({
-            "user": user,
-            "admin": True,
-        })
+        data = MappingProxyType(data)
         return data
 
     def end_session(self, session):
