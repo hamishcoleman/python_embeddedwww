@@ -92,6 +92,9 @@ class Authenticator:
         del self.sessions[session.id]
         session.state = "logout"
 
+    def replace_data(self, src, dst):
+        self.sessions[dst.id] = self.sessions[src.id]
+
     def request2session(self, request):
         session = Session.from_request(request)
         if session.id:
@@ -365,11 +368,18 @@ class PagesAuthList(Pages):
             action = form[b"a"][0].decode("utf8")
 
             action, action_id = action.split("/")
+            action_session = Session()
+            action_session.id = action_id
 
             if action == "del":
-                action_session = Session()
-                action_session.id = action_id
                 server.config.auth.end_session(action_session)
+            elif action == "clone":
+                server.config.auth.replace_data(action_session, session)
+
+                # TODO: hardcodes the location of this page
+                server.send_header("Location", "login")
+                server.send_error(HTTPStatus.SEE_OTHER)
+                return
             else:
                 server.send_error(HTTPStatus.BAD_REQUEST)
                 return
@@ -395,6 +405,7 @@ class PagesAuthList(Pages):
               <td>{v}
               <td>
                <button name="a" value="del/{k}">Del</button>
+               <button name="a" value="clone/{k}">Clone</button>
             """
 
         data += """
