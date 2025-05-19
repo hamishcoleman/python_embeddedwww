@@ -15,6 +15,7 @@ import urllib.parse
 import uuid
 
 from http import HTTPStatus
+from types import MappingProxyType
 
 
 class Session:
@@ -33,15 +34,22 @@ class Authenticator:
         self.sessions = {}
         # TODO: param to load auth table
 
-    def _check_login(self, user, password):
+    def _get_user_db(self, user, password):
         # TODO:
         # - lookup user/password in auth table
+        # - construct data from auth table details
         if user != "test":
-            return False
+            return None
         if password != "1234":
-            return False
+            return None
 
-        return True
+        # We enforce that the session data is readonly as that will allow
+        # the use of JWT (or similar) to populate the session data
+        data = MappingProxyType({
+            "user": user,
+            "admin": True,
+        })
+        return data
 
     def end_session(self, sessionid):
         del self.sessions[sessionid]
@@ -59,16 +67,15 @@ class Authenticator:
 
     def login2session(self, response, user, password):
         session = Session()
-        if not self._check_login(user, password):
+        data = self._get_user_db(user, password)
+        if data is None:
             session.state = "bad"
             return session
         session.state = "login"
 
         rnd = uuid.uuid4().bytes
         session.id = base64.urlsafe_b64encode(rnd).strip(b"=").decode("utf8")
-        session.data = {
-            "user": user,
-        }
+        session.data = data
 
         # Persist the session
         response.send_cookie("sessionid", session.id, SameSite="Lax")
