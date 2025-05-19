@@ -254,7 +254,8 @@ class PagesLogin(Pages):
 class PagesLogout(Pages):
     def handle(self, server):
         if server.command != "POST":
-            server.send_error(HTTPStatus.METHOD_NOT_ALLOWED)
+            server.send_header("Location", "login")
+            server.send_error(HTTPStatus.SEE_OTHER)
             return
 
         length = int(server.headers['Content-Length'])
@@ -268,40 +269,28 @@ class PagesLogout(Pages):
         except KeyError:
             session.state = "bad"
 
-        data = b""
-        data += b"""<!DOCTYPE html>
+        if session.state == "logout":
+            server.send_header("Location", "login")
+            server.send_error(HTTPStatus.SEE_OTHER)
+            return
+
+        # Something bad has happened
+        data = b"""<!DOCTYPE html>
           <html>
           <head>
            <title>Logout</title>
           </head>
           <body>
            <table>
-        """
-
-        if session.state == "logout":
-            data += b"""
-            <tr>
-             <th align=right>Logged out
-            <tr>
             <tr>
              <th>
-             <td align=right><a href="login">Login</a>
-            """
-
-        if session.state == "bad":
-            data += b"""
-            <tr>
-             <th>
-             <td>Bad Login Attempt
-            """
-
-        data += b"""
+             <td>Bad Logout Attempt
            </table>
           </form>
           </body>
         """
 
-        server.send_response(HTTPStatus.OK)
+        server.send_response(HTTPStatus.UNAUTHORIZED)
         server.send_header('Content-type', "text/html; charset=utf-8")
         server.end_headers()
         server.wfile.write(data)
