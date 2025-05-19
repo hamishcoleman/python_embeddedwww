@@ -159,7 +159,7 @@ class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
     def get_request_handler(self):
         try:
-            handler = handlers[self.path]
+            handler = self.config.handlers[self.path]
         except KeyError:
             return PagesError.generic(HTTPStatus.NOT_FOUND), None
 
@@ -195,7 +195,7 @@ class PagesMap(Pages):
          <ul>
         """
 
-        for path, handler in sorted(handlers.items()):
+        for path, handler in sorted(server.config.handlers.items()):
             if not handler.need_auth or session.has_auth:
                 data += f"""
                  <li><a href="{path}">{path}</a>
@@ -428,17 +428,6 @@ class PagesChat(Pages):
         server.wfile.write(data.encode("utf8"))
 
 
-# FIXME: global
-handlers = {
-    "/auth/login": PagesLogin(),
-    "/auth/list": PagesAuthList(),
-    "/chat/1": PagesChat(),
-    "/chat/2": PagesChat(),
-    "/sitemap": PagesMap(),
-    "/test": PagesTest(),
-}
-
-
 class SimpleSite(BetterHTTPRequestHandler):
 
     def __init__(self, *args, **kwargs):
@@ -481,6 +470,7 @@ class SimpleSiteConfig:
     def __init__(self):
         self.cookie_domain = None
         self.auth = None
+        self.handlers = None
 
 
 def argparser():
@@ -512,6 +502,14 @@ def main():
     config = SimpleSiteConfig()
     config.cookie_domain = args.cookie_domain
     config.auth = Authenticator()
+    config.handlers = {
+        "/auth/login": PagesLogin(),
+        "/auth/list": PagesAuthList(),
+        "/chat/1": PagesChat(),
+        "/chat/2": PagesChat(),
+        "/sitemap": PagesMap(),
+        "/test": PagesTest(),
+    }
 
     if hasattr(signal, 'SIGPIPE'):
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)
