@@ -55,8 +55,11 @@ class Authenticator:
         })
         return data
 
-    def end_session(self, sessionid):
-        del self.sessions[sessionid]
+    def end_session(self, session):
+        if session is None:
+            return
+        del self.sessions[session.id]
+        session.state = "logout"
 
     def request2session(self, request):
         session = Session()
@@ -216,9 +219,21 @@ class PagesLogin(Pages):
     def handle(self, server, session):
         if server.command == "POST":
             form = server.get_formdata()
-            user = form[b"user"][0].decode("utf8")
-            password = form[b"pass"][0].decode("utf8")
-            session = server.config.auth.login2session(server, user, password)
+            action = form[b"a"][0].decode("utf8")
+
+            if action == "login":
+                user = form[b"user"][0].decode("utf8")
+                password = form[b"pass"][0].decode("utf8")
+                session = server.config.auth.login2session(
+                    server,
+                    user,
+                    password
+                )
+            else:
+                try:
+                    server.config.auth.end_session(session)
+                except KeyError:
+                    session.state = "bad"
 
         data = b"""<!DOCTYPE html>
           <html>
@@ -226,19 +241,11 @@ class PagesLogin(Pages):
            <title>Login</title>
           </head>
           <body>
+           <form method="post">
+            <table>
         """
 
-        if session.has_auth:
-            data += b"""
-             <form method="post" action="logout">
-            """
-        else:
-            data += b"""
-             <form method="post">
-            """
-
         data += f"""
-         <table>
           <tr>
            <th align=right>Client:
            <td>{server.client_address}
@@ -276,7 +283,7 @@ class PagesLogin(Pages):
             <tr>
             <tr>
              <th>
-             <td align=right><input type="submit" value="Logout">
+             <td align=right><button name="a" value="logout">Logout</button>
             """.encode("utf8")
         else:
             data += b"""
@@ -289,14 +296,14 @@ class PagesLogin(Pages):
              <td><input type="password" id="pass" name="pass">
             <tr>
              <th>
-             <td align=right><input type="submit" value="Login">
+             <td align=right><button name="a" value="login">Login</button>
             """
 
         if session.state == "bad":
             data += b"""
             <tr>
              <th>
-             <td>Bad Login Attempt
+             <td>Bad Attempt
             """
             code = HTTPStatus.UNAUTHORIZED
         else:
@@ -309,52 +316,6 @@ class PagesLogin(Pages):
         """
 
         server.send_response(code)
-        server.send_header('Content-type', "text/html; charset=utf-8")
-        server.end_headers()
-        server.wfile.write(data)
-
-
-class PagesLogout(Pages):
-    need_auth = False
-
-    def handle(self, server, session):
-        if server.command != "POST":
-            server.send_header("Location", "login")
-            server.send_error(HTTPStatus.SEE_OTHER)
-            return
-
-        # TODO: does http.server take care of keeping session sync?
-        length = int(server.headers['Content-Length'])
-        data = server.rfile.read(length)
-
-        try:
-            server.config.auth.end_session(session.id)
-            session.state = "logout"
-        except KeyError:
-            session.state = "bad"
-
-        if session.state == "logout":
-            server.send_header("Location", "login")
-            server.send_error(HTTPStatus.SEE_OTHER)
-            return
-
-        # Something bad has happened
-        data = b"""<!DOCTYPE html>
-          <html>
-          <head>
-           <title>Logout</title>
-          </head>
-          <body>
-           <table>
-            <tr>
-             <th>
-             <td>Bad Logout Attempt
-           </table>
-          </form>
-          </body>
-        """
-
-        server.send_response(HTTPStatus.UNAUTHORIZED)
         server.send_header('Content-type', "text/html; charset=utf-8")
         server.end_headers()
         server.wfile.write(data)
@@ -406,7 +367,6 @@ class PagesChat(Pages):
 # FIXME: global
 handlers = {
     "/auth/login": PagesLogin(),
-    "/auth/logout": PagesLogout(),
     "/auth/list": PagesAuthList(),
     "/chat/1": PagesChat(),
     "/chat/2": PagesChat(),
