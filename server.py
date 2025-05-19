@@ -288,9 +288,10 @@ class PagesLogin(Pages):
              <td>{session.user}
             <tr>
             <tr>
-             <th>
+             <td><a href="/sitemap">sitemap</a>
              <td align=right><button name="a" value="logout">Logout</button>
             """.encode("utf8")
+            # TODO: the above hardcodes the location of the sitemap
         else:
             data += b"""
             <tr>
