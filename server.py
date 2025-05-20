@@ -188,6 +188,34 @@ class Widget:
         """
         return r
 
+    @classmethod
+    def show_dictlist(cls, dl, actions):
+        r = []
+        r += """
+         <table>
+          <tr>
+           <th>ID
+           <th>Data
+           <th>Action
+        """
+
+        for i in range(len(dl)):
+            r += f"""
+             <tr>
+              <td>{i}
+              <td>{dl[i]}
+              <td>
+            """
+            for action in actions:
+                r += f"""
+                 <button name="a" value="{action}/{i}">{action}</button>
+                """
+
+        r += """
+         </table>
+        """
+        return r
+
 
 class Pages:
     need_auth = False
@@ -517,6 +545,80 @@ class PagesKV(Pages):
         server.wfile.write(data.encode("utf8"))
 
 
+class PagesQuery(Pages):
+    def __init__(self):
+        self.queries = []
+
+    def handle(self, server, session):
+        if server.command == "POST":
+            form = server.get_formdata()
+
+            if b"q" in form:
+                query = form[b"q"][0].decode("utf8")
+
+                # FIXME: better id
+                _id = len(self.queries)
+                self.queries.append({
+                    "id": _id,
+                    "q": query,
+                    "a": None,
+                })
+                server.send_response(HTTPStatus.OK)
+                server.send_header('Content-type', "text/html")
+                server.end_headers()
+                server.wfile.write(str(_id).encode("utf8"))
+                return
+
+            if b"a" in form:
+                if not session.has_auth:
+                    server.send_error(HTTPStatus.UNAUTHORIZED)
+                    return
+
+                action = form[b"a"][0].decode("utf8")
+
+                if action.startswith("del/"):
+                    _, action_id = action.split("/")
+                    action_id = int(action_id)
+                    del self.queries[action_id]
+                # Allow
+                # Edit
+                else:
+                    server.send_error(HTTPStatus.BAD_REQUEST)
+                    return
+
+        data = []
+        data += Widget.head("Queries")
+        data += """<body>
+         <form method="post">
+          <input type="text" name="q" autofocus>
+          <button name="qq" value="query">query</button>
+         </form>
+        """
+
+        if session.has_auth:
+            data += """
+             <form method="post">
+            """
+
+            data += Widget.show_dictlist(
+                self.queries,
+                ["del"],
+            )
+
+            data += "</form>"
+
+        data += """
+          </body>
+         </html>
+        """
+
+        data = "".join(data)
+        server.send_response(HTTPStatus.OK)
+        server.send_header('Content-type', "text/html; charset=utf-8")
+        server.end_headers()
+        server.wfile.write(data.encode("utf8"))
+
+
 class PagesChat(Pages):
     need_auth = True
 
@@ -640,6 +742,7 @@ def main():
         "/auth/list": PagesAuthList(),
         "/kv": PagesKV(data_kv),
         "/notes": PagesChat(data_chat),
+        "/q": PagesQuery(),
         "/sitemap": PagesMap(),
         "/test": PagesTest(),
     }
