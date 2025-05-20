@@ -466,6 +466,57 @@ class PagesAuthList(Pages):
         server.wfile.write(data.encode("utf8"))
 
 
+class PagesKV(Pages):
+    need_auth = True
+
+    def __init__(self, data):
+        self.data = data
+
+    def handle(self, server, session):
+        if server.command == "POST":
+            form = server.get_formdata()
+            action = form[b"a"][0].decode("utf8")
+
+            if action == "add":
+                k = form[b"key"][0].decode("utf8")
+                v = form[b"val"][0].decode("utf8")
+                self.data[k] = v
+            elif action.startswith("del/"):
+                _, action_id = action.split("/")
+                del self.data[action_id]
+            # elif action == "edit":
+            #     self.data[action_id] = form[b"val"][0].decode("utf8")
+            else:
+                server.send_error(HTTPStatus.BAD_REQUEST)
+                return
+
+        data = []
+        data += Widget.head("KV")
+        data += """<body>
+         <form method="post">
+          <input type="text" name="key" autofocus>
+          <input type="text" name="val">
+          <button name="a" value="add">add</button>
+        """
+
+        data += Widget.show_dict(
+            self.data,
+            ["del"],
+        )
+
+        data += """
+           </form>
+          </body>
+         </html>
+        """
+
+        data = "".join(data)
+        server.send_response(HTTPStatus.OK)
+        server.send_header('Content-type', "text/html; charset=utf-8")
+        server.end_headers()
+        server.wfile.write(data.encode("utf8"))
+
+
 class PagesChat(Pages):
     need_auth = True
 
@@ -579,6 +630,7 @@ def main():
     args = argparser()
 
     data_chat = []
+    data_kv = {}
 
     config = SimpleSiteConfig()
     config.cookie_domain = args.cookie_domain
@@ -586,6 +638,7 @@ def main():
     config.handlers = {
         "/auth/login": PagesLogin(),
         "/auth/list": PagesAuthList(),
+        "/kv": PagesKV(data_kv),
         "/notes": PagesChat(data_chat),
         "/sitemap": PagesMap(),
         "/test": PagesTest(),
