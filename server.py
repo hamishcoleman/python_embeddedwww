@@ -190,13 +190,11 @@ class Widget:
 
 
 class Pages:
-    pass
-
-
-class PagesError(Pages):
     need_auth = False
     need_admin = False
 
+
+class PagesError(Pages):
     @classmethod
     def generic(cls, code):
         self = cls()
@@ -270,9 +268,6 @@ class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
 
 class PagesTest(Pages):
-    need_auth = False
-    need_admin = False
-
     def handle(self, server, session):
         server.send_response(HTTPStatus.OK)
         server.send_header('Content-type', "text/html")
@@ -281,9 +276,6 @@ class PagesTest(Pages):
 
 
 class PagesMap(Pages):
-    need_auth = False
-    need_admin = False
-
     def handle(self, server, session):
         data = []
         data += Widget.head("Index")
@@ -313,9 +305,6 @@ class PagesMap(Pages):
 
 
 class PagesLogin(Pages):
-    need_auth = False
-    need_admin = False
-
     def handle(self, server, session):
         if server.command == "POST":
             form = server.get_formdata()
@@ -479,7 +468,6 @@ class PagesAuthList(Pages):
 
 class PagesChat(Pages):
     need_auth = True
-    need_admin = False
 
     def __init__(self, chat_data):
         self.chat = chat_data
