@@ -441,8 +441,8 @@ class PagesChat(Pages):
     need_auth = True
     need_admin = False
 
-    def __init__(self):
-        self.chat = []
+    def __init__(self, chat_data):
+        self.chat = chat_data
 
     def handle(self, server, session):
         if server.command == "POST":
@@ -552,14 +552,15 @@ def argparser():
 def main():
     args = argparser()
 
+    chat_data = []
+
     config = SimpleSiteConfig()
     config.cookie_domain = args.cookie_domain
     config.auth = Authenticator()
     config.handlers = {
         "/auth/login": PagesLogin(),
         "/auth/list": PagesAuthList(),
-        "/chat/1": PagesChat(),
-        "/chat/2": PagesChat(),
+        "/notes": PagesChat(chat_data),
         "/sitemap": PagesMap(),
         "/test": PagesTest(),
     }
