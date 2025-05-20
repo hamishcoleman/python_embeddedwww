@@ -131,6 +131,64 @@ class Authenticator:
         return session
 
 
+class Widget:
+    @classmethod
+    def style(cls):
+        r = []
+        r += """
+         <style>
+         table {
+          border-collapse: collapse;
+         }
+         td {
+          border-style: solid;
+          border-width: 1px;
+         }
+         </style>
+        """
+        return r
+
+    @classmethod
+    def head(cls, title):
+        r = []
+        r += """<!DOCTYPE html>
+         <html>
+         <head>
+        """
+        r += f"<title>{title}</title>"
+        r += Widget.style()
+        r += "</head>"
+        return r
+
+    @classmethod
+    def show_dict(cls, d, actions):
+        r = []
+        r += """
+         <table>
+          <tr>
+           <th>ID
+           <th>Data
+           <th>Action
+        """
+
+        for k, v in d.items():
+            r += f"""
+             <tr>
+              <td>{k}
+              <td>{v}
+              <td>
+            """
+            for action in actions:
+                r += f"""
+                 <button name="a" value="{action}/{k}">{action}</button>
+                """
+
+        r += """
+         </table>
+        """
+        return r
+
+
 class Pages:
     pass
 
@@ -227,14 +285,10 @@ class PagesMap(Pages):
     need_admin = False
 
     def handle(self, server, session):
-        data = """<!DOCTYPE html>
-         <html>
-         <head>
-          <title>Index</title>
-         </head>
-         <body>
-         <ul>
-        """
+        data = []
+        data += Widget.head("Index")
+        data += "<body>"
+        data += "<ul>"
 
         for path, handler in sorted(server.config.handlers.items()):
             if handler.need_auth and not session.has_auth:
@@ -251,6 +305,7 @@ class PagesMap(Pages):
          </html>
         """
 
+        data = "".join(data)
         server.send_response(HTTPStatus.OK)
         server.send_header("Content-type", "text/html; charset=utf-8")
         server.end_headers()
@@ -287,12 +342,9 @@ class PagesLogin(Pages):
                 except KeyError:
                     session.state = "bad"
 
-        data = b"""<!DOCTYPE html>
-          <html>
-          <head>
-           <title>Login</title>
-          </head>
-          <body>
+        data = []
+        data = Widget.head("Login")
+        data += """<body>
            <form method="post">
             <table>
         """
@@ -301,7 +353,7 @@ class PagesLogin(Pages):
           <tr>
            <th align=right>Client:
            <td>{server.client_address}
-        """.encode("utf8")
+        """
 
         # TODO:
         # - if we are behind a proxy, use the header instead of the
@@ -316,7 +368,7 @@ class PagesLogin(Pages):
           <tr>
            <th align=right>Host:
            <td>{host}
-        """.encode("utf8")
+        """
 
         cookie_uuid = server.get_cookie("uuid")
         if cookie_uuid:
@@ -324,7 +376,7 @@ class PagesLogin(Pages):
             <tr>
              <th align=right>UUID:
              <td>{cookie_uuid}
-            """.encode("utf8")
+            """
 
         if session.has_auth:
             data += f"""
@@ -336,10 +388,10 @@ class PagesLogin(Pages):
             <tr>
              <td><a href="/sitemap">sitemap</a>
              <td align=right><button name="a" value="logout">Logout</button>
-            """.encode("utf8")
+            """
             # TODO: the above hardcodes the location of the sitemap
         else:
-            data += b"""
+            data += """
             <tr>
             <tr>
              <th align=right><label for="user">Username:</label>
@@ -353,7 +405,7 @@ class PagesLogin(Pages):
             """
 
         if session.state == "bad":
-            data += b"""
+            data += """
             <tr>
              <th>
              <td>Bad Attempt
@@ -362,16 +414,17 @@ class PagesLogin(Pages):
         else:
             code = HTTPStatus.OK
 
-        data += b"""
+        data += """
            </table>
           </form>
           </body>
         """
 
+        data = "".join(data)
         server.send_response(code)
         server.send_header('Content-type', "text/html; charset=utf-8")
         server.end_headers()
-        server.wfile.write(data)
+        server.wfile.write(data.encode("utf8"))
 
 
 class PagesAuthList(Pages):
@@ -400,37 +453,24 @@ class PagesAuthList(Pages):
                 server.send_error(HTTPStatus.BAD_REQUEST)
                 return
 
-        data = """<!DOCTYPE html>
-          <html>
-          <head>
-           <title>Sessions</title>
-          </head>
-          <body>
-           <form method="post">
-            <table>
-             <tr>
-              <th>ID
-              <th>Data
-              <th>Action
+        data = []
+        data += Widget.head("Sessions")
+        data += """<body>
+         <form method="post">
         """
 
-        for k, v in server.config.auth.sessions.items():
-            data += f"""
-             <tr>
-              <td>{k}
-              <td>{v}
-              <td>
-               <button name="a" value="del/{k}">Del</button>
-               <button name="a" value="clone/{k}">Clone</button>
-            """
+        data += Widget.show_dict(
+            server.config.auth.sessions,
+            ["del", "clone"],
+        )
 
         data += """
-            </table>
            </form>
           </body>
          </html>
         """
 
+        data = "".join(data)
         server.send_response(HTTPStatus.OK)
         server.send_header('Content-type', "text/html; charset=utf-8")
         server.end_headers()
@@ -451,12 +491,9 @@ class PagesChat(Pages):
             note = session.user + ":" + chat
             self.chat.append(note)
 
-        data = """<!DOCTYPE html>
-          <html>
-          <head>
-           <title>Chat</title>
-          </head>
-          <body>
+        data = []
+        data += Widget.head("Chat")
+        data += """<body>
           <table>
         """
 
@@ -475,6 +512,7 @@ class PagesChat(Pages):
          </table>
         """
 
+        data = "".join(data)
         server.send_response(HTTPStatus.OK)
         server.send_header('Content-type', "text/html; charset=utf-8")
         server.end_headers()
@@ -552,7 +590,7 @@ def argparser():
 def main():
     args = argparser()
 
-    chat_data = []
+    data_chat = []
 
     config = SimpleSiteConfig()
     config.cookie_domain = args.cookie_domain
@@ -560,7 +598,7 @@ def main():
     config.handlers = {
         "/auth/login": PagesLogin(),
         "/auth/list": PagesAuthList(),
-        "/notes": PagesChat(chat_data),
+        "/notes": PagesChat(data_chat),
         "/sitemap": PagesMap(),
         "/test": PagesTest(),
     }
