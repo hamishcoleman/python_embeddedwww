@@ -29,8 +29,16 @@ class Session:
         return self.data["user"]
 
     @property
+    def role(self):
+        return self.data["role"]
+
+    @property
     def has_auth(self):
         return self.state == "login"
+
+    @property
+    def has_admin(self):
+        return self.role == "admin"
 
     @classmethod
     def from_request(cls, request):
@@ -61,11 +69,11 @@ class Authenticator:
         fake_user = {
             "admin": {
                 "desc": "A Test Admin",
-                "admin": True,
+                "role": "admin",
             },
             "user": {
                 "desc": "Test User",
-                "admin": False,
+                "role": "user",
             },
         }
         fake_pass = {
@@ -129,6 +137,7 @@ class Pages:
 
 class PagesError(Pages):
     need_auth = False
+    need_admin = False
 
     @classmethod
     def generic(cls, code):
@@ -195,12 +204,16 @@ class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         if handler.need_auth:
             if not session.has_auth:
                 return PagesError.generic(HTTPStatus.UNAUTHORIZED), None
+        if handler.need_admin:
+            if not session.has_admin:
+                return PagesError.generic(HTTPStatus.UNAUTHORIZED), None
 
         return handler, session
 
 
 class PagesTest(Pages):
     need_auth = False
+    need_admin = False
 
     def handle(self, server, session):
         server.send_response(HTTPStatus.OK)
@@ -211,6 +224,7 @@ class PagesTest(Pages):
 
 class PagesMap(Pages):
     need_auth = False
+    need_admin = False
 
     def handle(self, server, session):
         data = """<!DOCTYPE html>
@@ -223,10 +237,13 @@ class PagesMap(Pages):
         """
 
         for path, handler in sorted(server.config.handlers.items()):
-            if not handler.need_auth or session.has_auth:
-                data += f"""
-                 <li><a href="{path}">{path}</a>
-                """
+            if handler.need_auth and not session.has_auth:
+                continue
+            if handler.need_admin and not session.has_admin:
+                continue
+            data += f"""
+             <li><a href="{path}">{path}</a>
+            """
 
         data += """
          </ul>
@@ -242,6 +259,7 @@ class PagesMap(Pages):
 
 class PagesLogin(Pages):
     need_auth = False
+    need_admin = False
 
     def handle(self, server, session):
         if server.command == "POST":
@@ -357,12 +375,9 @@ class PagesLogin(Pages):
 
 class PagesAuthList(Pages):
     need_auth = True
+    need_admin = True
 
     def handle(self, server, session):
-        if not session.data.get("admin", False):
-            server.send_error(HTTPStatus.UNAUTHORIZED)
-            return
-
         if server.command == "POST":
             form = server.get_formdata()
             action = form[b"a"][0].decode("utf8")
@@ -423,6 +438,7 @@ class PagesAuthList(Pages):
 
 class PagesChat(Pages):
     need_auth = True
+    need_admin = False
 
     def __init__(self):
         self.chat = []
