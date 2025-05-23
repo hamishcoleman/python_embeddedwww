@@ -286,13 +286,18 @@ class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
         page.handle(self)
 
+    def send_page(self, code, body, content_type="text/html"):
+        if isinstance(body, str):
+            body = body.encode("utf8")
+        self.send_response(code)
+        self.send_header('Content-type', content_type)
+        self.end_headers()
+        self.wfile.write(body)
+
 
 class PagesTest(Pages):
     def handle(self, handler):
-        handler.send_response(HTTPStatus.OK)
-        handler.send_header('Content-type', "text/html")
-        handler.end_headers()
-        handler.wfile.write(b"A Testable Page")
+        handler.send_page(HTTPStatus.OK, "A Testable Page")
 
 
 class PagesMap(Pages):
@@ -318,10 +323,7 @@ class PagesMap(Pages):
         """
 
         data = "".join(data)
-        handler.send_response(HTTPStatus.OK)
-        handler.send_header("Content-type", "text/html; charset=utf-8")
-        handler.end_headers()
-        handler.wfile.write(data.encode("utf8"))
+        handler.send_page(HTTPStatus.OK, data)
 
 
 class PagesLogin(Pages):
@@ -430,10 +432,7 @@ class PagesLogin(Pages):
         """
 
         data = "".join(data)
-        handler.send_response(code)
-        handler.send_header('Content-type', "text/html; charset=utf-8")
-        handler.end_headers()
-        handler.wfile.write(data.encode("utf8"))
+        handler.send_page(code, data)
 
 
 class PagesAuthList(Pages):
@@ -480,10 +479,7 @@ class PagesAuthList(Pages):
         """
 
         data = "".join(data)
-        handler.send_response(HTTPStatus.OK)
-        handler.send_header('Content-type', "text/html; charset=utf-8")
-        handler.end_headers()
-        handler.wfile.write(data.encode("utf8"))
+        handler.send_page(HTTPStatus.OK, data)
 
 
 class PagesKV(Pages):
@@ -531,10 +527,7 @@ class PagesKV(Pages):
         """
 
         data = "".join(data)
-        handler.send_response(HTTPStatus.OK)
-        handler.send_header('Content-type', "text/html; charset=utf-8")
-        handler.end_headers()
-        handler.wfile.write(data.encode("utf8"))
+        handler.send_page(HTTPStatus.OK, data)
 
 
 class PagesQuery(Pages):
@@ -555,10 +548,7 @@ class PagesQuery(Pages):
                     "q": query,
                     "a": None,
                 })
-                handler.send_response(HTTPStatus.OK)
-                handler.send_header('Content-type', "text/html")
-                handler.end_headers()
-                handler.wfile.write(str(_id).encode("utf8"))
+                handler.send_page(HTTPStatus.OK, str(_id))
                 return
 
             if b"a" in form:
@@ -605,10 +595,7 @@ class PagesQuery(Pages):
         """
 
         data = "".join(data)
-        handler.send_response(HTTPStatus.OK)
-        handler.send_header('Content-type', "text/html; charset=utf-8")
-        handler.end_headers()
-        handler.wfile.write(data.encode("utf8"))
+        handler.send_page(HTTPStatus.OK, data)
 
 
 class PagesChat(Pages):
@@ -646,10 +633,7 @@ class PagesChat(Pages):
         """
 
         data = "".join(data)
-        handler.send_response(HTTPStatus.OK)
-        handler.send_header('Content-type', "text/html; charset=utf-8")
-        handler.end_headers()
-        handler.wfile.write(data.encode("utf8"))
+        handler.send_page(HTTPStatus.OK, data)
 
 
 class SimpleSite(BetterHTTPRequestHandler):
