@@ -229,10 +229,10 @@ class PagesError(Pages):
         self.code = code
         return self
 
-    def handle(self, server, session):
+    def handle(self, handler):
         # TODO:
         # - message, explain
-        server.send_error(self.code)
+        handler.send_error(self.code)
 
 
 class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
@@ -277,43 +277,46 @@ class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         form = urllib.parse.parse_qs(data)
         return form
 
-    def get_request_handler(self):
+    def _route2page(self):
         try:
-            handler = self.config.handlers[self.path]
+            page = self.config.routes[self.path]
         except KeyError:
-            return PagesError.generic(HTTPStatus.NOT_FOUND), None
+            PagesError.generic(HTTPStatus.NOT_FOUND).handle()
+            return
 
         # TODO: could add handler.need_session and avoid getting session
-        session = self.config.auth.request2session(self)
-        if handler.need_auth:
-            if not session.has_auth:
-                return PagesError.generic(HTTPStatus.UNAUTHORIZED), None
-        if handler.need_admin:
-            if not session.has_admin:
-                return PagesError.generic(HTTPStatus.UNAUTHORIZED), None
+        self.session = self.config.auth.request2session(self)
+        if page.need_auth:
+            if not self.session.has_auth:
+                PagesError.generic(HTTPStatus.UNAUTHORIZED).handle(self)
+                return
+        if page.need_admin:
+            if not self.session.has_admin:
+                PagesError.generic(HTTPStatus.UNAUTHORIZED).handle(self)
+                return
 
-        return handler, session
+        page.handle(self)
 
 
 class PagesTest(Pages):
-    def handle(self, server, session):
-        server.send_response(HTTPStatus.OK)
-        server.send_header('Content-type', "text/html")
-        server.end_headers()
-        server.wfile.write(b"A Testable Page")
+    def handle(self, handler):
+        handler.send_response(HTTPStatus.OK)
+        handler.send_header('Content-type', "text/html")
+        handler.end_headers()
+        handler.wfile.write(b"A Testable Page")
 
 
 class PagesMap(Pages):
-    def handle(self, server, session):
+    def handle(self, handler):
         data = []
         data += Widget.head("Index")
         data += "<body>"
         data += "<ul>"
 
-        for path, handler in sorted(server.config.handlers.items()):
-            if handler.need_auth and not session.has_auth:
+        for path, page in sorted(handler.config.routes.items()):
+            if page.need_auth and not handler.session.has_auth:
                 continue
-            if handler.need_admin and not session.has_admin:
+            if page.need_admin and not handler.session.has_admin:
                 continue
             data += f"""
              <li><a href="{path}">{path}</a>
@@ -326,38 +329,38 @@ class PagesMap(Pages):
         """
 
         data = "".join(data)
-        server.send_response(HTTPStatus.OK)
-        server.send_header("Content-type", "text/html; charset=utf-8")
-        server.end_headers()
-        server.wfile.write(data.encode("utf8"))
+        handler.send_response(HTTPStatus.OK)
+        handler.send_header("Content-type", "text/html; charset=utf-8")
+        handler.end_headers()
+        handler.wfile.write(data.encode("utf8"))
 
 
 class PagesLogin(Pages):
-    def handle(self, server, session):
-        if server.command == "POST":
-            form = server.get_formdata()
+    def handle(self, handler):
+        if handler.command == "POST":
+            form = handler.get_formdata()
             action = form[b"a"][0].decode("utf8")
 
             if action == "login":
                 user = form[b"user"][0].decode("utf8")
                 password = form[b"pass"][0].decode("utf8")
-                session = server.config.auth.login2session(
-                    server,
+                handler.session = handler.config.auth.login2session(
+                    handler,
                     user,
                     password
                 )
 
-                if session.has_auth:
+                if handler.session.has_auth:
                     # Make reloading nicer
                     # TODO: hardcodes the location of this page
-                    server.send_header("Location", "login")
-                    server.send_error(HTTPStatus.SEE_OTHER)
+                    handler.send_header("Location", "login")
+                    handler.send_error(HTTPStatus.SEE_OTHER)
                     return
             else:
                 try:
-                    server.config.auth.end_session(session)
+                    handler.config.auth.end_session(handler.session)
                 except KeyError:
-                    session.state = "bad"
+                    handler.session.state = "bad"
 
         data = []
         data = Widget.head("Login")
@@ -369,7 +372,7 @@ class PagesLogin(Pages):
         data += f"""
           <tr>
            <th align=right>Client:
-           <td>{server.client_address}
+           <td>{handler.client_address}
         """
 
         # TODO:
@@ -377,17 +380,17 @@ class PagesLogin(Pages):
         #   client_address
 
         # TODO:
-        # if server.client_address[0] == "127.0.0.1":
+        # if handler.client_address[0] == "127.0.0.1":
         #     data += pid/processname/args
 
-        host = server.headers["Host"]
+        host = handler.headers["Host"]
         data += f"""
           <tr>
            <th align=right>Host:
            <td>{host}
         """
 
-        cookie_uuid = server.get_cookie("uuid")
+        cookie_uuid = handler.get_cookie("uuid")
         if cookie_uuid:
             data += f"""
             <tr>
@@ -395,12 +398,12 @@ class PagesLogin(Pages):
              <td>{cookie_uuid}
             """
 
-        if session.has_auth:
+        if handler.session.has_auth:
             data += f"""
             <tr>
             <tr>
              <th align=right><label for="user">Username:</label>
-             <td>{session.user}
+             <td>{handler.session.user}
             <tr>
             <tr>
              <td><a href="/sitemap">sitemap</a>
@@ -421,7 +424,7 @@ class PagesLogin(Pages):
              <td align=right><button name="a" value="login">Login</button>
             """
 
-        if session.state == "bad":
+        if handler.session.state == "bad":
             data += """
             <tr>
              <th>
@@ -438,19 +441,19 @@ class PagesLogin(Pages):
         """
 
         data = "".join(data)
-        server.send_response(code)
-        server.send_header('Content-type', "text/html; charset=utf-8")
-        server.end_headers()
-        server.wfile.write(data.encode("utf8"))
+        handler.send_response(code)
+        handler.send_header('Content-type', "text/html; charset=utf-8")
+        handler.end_headers()
+        handler.wfile.write(data.encode("utf8"))
 
 
 class PagesAuthList(Pages):
     need_auth = True
     need_admin = True
 
-    def handle(self, server, session):
-        if server.command == "POST":
-            form = server.get_formdata()
+    def handle(self, handler):
+        if handler.command == "POST":
+            form = handler.get_formdata()
             action = form[b"a"][0].decode("utf8")
 
             action, action_id = action.split("/")
@@ -458,16 +461,16 @@ class PagesAuthList(Pages):
             action_session.id = action_id
 
             if action == "del":
-                server.config.auth.end_session(action_session)
+                handler.config.auth.end_session(action_session)
             elif action == "clone":
-                server.config.auth.replace_data(action_session, session)
+                handler.config.auth.replace_data(action_session, self.session)
 
                 # TODO: hardcodes the location of this page
-                server.send_header("Location", "login")
-                server.send_error(HTTPStatus.SEE_OTHER)
+                handler.send_header("Location", "login")
+                handler.send_error(HTTPStatus.SEE_OTHER)
                 return
             else:
-                server.send_error(HTTPStatus.BAD_REQUEST)
+                handler.send_error(HTTPStatus.BAD_REQUEST)
                 return
 
         data = []
@@ -477,7 +480,7 @@ class PagesAuthList(Pages):
         """
 
         data += Widget.show_dict(
-            server.config.auth.sessions,
+            handler.config.auth.sessions,
             ["del", "clone"],
         )
 
@@ -488,10 +491,10 @@ class PagesAuthList(Pages):
         """
 
         data = "".join(data)
-        server.send_response(HTTPStatus.OK)
-        server.send_header('Content-type', "text/html; charset=utf-8")
-        server.end_headers()
-        server.wfile.write(data.encode("utf8"))
+        handler.send_response(HTTPStatus.OK)
+        handler.send_header('Content-type', "text/html; charset=utf-8")
+        handler.end_headers()
+        handler.wfile.write(data.encode("utf8"))
 
 
 class PagesKV(Pages):
@@ -500,9 +503,9 @@ class PagesKV(Pages):
     def __init__(self, data):
         self.data = data
 
-    def handle(self, server, session):
-        if server.command == "POST":
-            form = server.get_formdata()
+    def handle(self, handler):
+        if handler.command == "POST":
+            form = handler.get_formdata()
             action = form[b"a"][0].decode("utf8")
 
             if action == "add":
@@ -515,7 +518,7 @@ class PagesKV(Pages):
             # elif action == "edit":
             #     self.data[action_id] = form[b"val"][0].decode("utf8")
             else:
-                server.send_error(HTTPStatus.BAD_REQUEST)
+                handler.send_error(HTTPStatus.BAD_REQUEST)
                 return
 
         data = []
@@ -539,19 +542,19 @@ class PagesKV(Pages):
         """
 
         data = "".join(data)
-        server.send_response(HTTPStatus.OK)
-        server.send_header('Content-type', "text/html; charset=utf-8")
-        server.end_headers()
-        server.wfile.write(data.encode("utf8"))
+        handler.send_response(HTTPStatus.OK)
+        handler.send_header('Content-type', "text/html; charset=utf-8")
+        handler.end_headers()
+        handler.wfile.write(data.encode("utf8"))
 
 
 class PagesQuery(Pages):
     def __init__(self):
         self.queries = []
 
-    def handle(self, server, session):
-        if server.command == "POST":
-            form = server.get_formdata()
+    def handle(self, handler):
+        if handler.command == "POST":
+            form = handler.get_formdata()
 
             if b"q" in form:
                 query = form[b"q"][0].decode("utf8")
@@ -563,15 +566,15 @@ class PagesQuery(Pages):
                     "q": query,
                     "a": None,
                 })
-                server.send_response(HTTPStatus.OK)
-                server.send_header('Content-type', "text/html")
-                server.end_headers()
-                server.wfile.write(str(_id).encode("utf8"))
+                handler.send_response(HTTPStatus.OK)
+                handler.send_header('Content-type', "text/html")
+                handler.end_headers()
+                handler.wfile.write(str(_id).encode("utf8"))
                 return
 
             if b"a" in form:
-                if not session.has_auth:
-                    server.send_error(HTTPStatus.UNAUTHORIZED)
+                if not self.session.has_auth:
+                    handler.send_error(HTTPStatus.UNAUTHORIZED)
                     return
 
                 action = form[b"a"][0].decode("utf8")
@@ -583,7 +586,7 @@ class PagesQuery(Pages):
                 # Allow
                 # Edit
                 else:
-                    server.send_error(HTTPStatus.BAD_REQUEST)
+                    handler.send_error(HTTPStatus.BAD_REQUEST)
                     return
 
         data = []
@@ -595,7 +598,7 @@ class PagesQuery(Pages):
          </form>
         """
 
-        if session.has_auth:
+        if handler.session.has_auth:
             data += """
              <form method="post">
             """
@@ -613,10 +616,10 @@ class PagesQuery(Pages):
         """
 
         data = "".join(data)
-        server.send_response(HTTPStatus.OK)
-        server.send_header('Content-type', "text/html; charset=utf-8")
-        server.end_headers()
-        server.wfile.write(data.encode("utf8"))
+        handler.send_response(HTTPStatus.OK)
+        handler.send_header('Content-type', "text/html; charset=utf-8")
+        handler.end_headers()
+        handler.wfile.write(data.encode("utf8"))
 
 
 class PagesChat(Pages):
@@ -625,11 +628,11 @@ class PagesChat(Pages):
     def __init__(self, chat_data):
         self.chat = chat_data
 
-    def handle(self, server, session):
-        if server.command == "POST":
-            form = server.get_formdata()
+    def handle(self, handler):
+        if handler.command == "POST":
+            form = handler.get_formdata()
             chat = form[b"chat"][0].decode("utf8")
-            note = session.user + ":" + chat
+            note = handler.session.user + ":" + chat
             self.chat.append(note)
 
         data = []
@@ -654,10 +657,10 @@ class PagesChat(Pages):
         """
 
         data = "".join(data)
-        server.send_response(HTTPStatus.OK)
-        server.send_header('Content-type', "text/html; charset=utf-8")
-        server.end_headers()
-        server.wfile.write(data.encode("utf8"))
+        handler.send_response(HTTPStatus.OK)
+        handler.send_header('Content-type', "text/html; charset=utf-8")
+        handler.end_headers()
+        handler.wfile.write(data.encode("utf8"))
 
 
 class SimpleSite(BetterHTTPRequestHandler):
@@ -686,23 +689,20 @@ class SimpleSite(BetterHTTPRequestHandler):
 
         self.send_cookie("uuid", cookie, **attribs)
 
-    def handle_request(self):
-        self._check_uuid()
-        handler, session = self.get_request_handler()
-        handler.handle(self, session)
-
     def do_GET(self):
-        self.handle_request()
+        self._check_uuid()
+        self._route2page()
 
     def do_POST(self):
-        self.handle_request()
+        self._check_uuid()
+        self._route2page()
 
 
 class SimpleSiteConfig:
     def __init__(self):
         self.cookie_domain = None
         self.auth = None
-        self.handlers = None
+        self.routes = None
 
 
 def argparser():
@@ -737,7 +737,7 @@ def main():
     config = SimpleSiteConfig()
     config.cookie_domain = args.cookie_domain
     config.auth = Authenticator()
-    config.handlers = {
+    config.routes = {
         "/auth/login": PagesLogin(),
         "/auth/list": PagesAuthList(),
         "/kv": PagesKV(data_kv),
