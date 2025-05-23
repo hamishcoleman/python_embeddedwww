@@ -222,17 +222,6 @@ class Pages:
     need_admin = False
 
 
-class PagesError(Pages):
-    @classmethod
-    def generic(cls, code):
-        self = cls()
-        self.code = code
-        return self
-
-    def handle(self, handler):
-        # TODO:
-        # - message, explain
-        handler.send_error(self.code)
 
 
 class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
@@ -281,18 +270,18 @@ class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         try:
             page = self.config.routes[self.path]
         except KeyError:
-            PagesError.generic(HTTPStatus.NOT_FOUND).handle()
+            self.send_error(HTTPStatus.NOT_FOUND)
             return
 
         # TODO: could add handler.need_session and avoid getting session
         self.session = self.config.auth.request2session(self)
         if page.need_auth:
             if not self.session.has_auth:
-                PagesError.generic(HTTPStatus.UNAUTHORIZED).handle(self)
+                self.send_error(HTTPStatus.UNAUTHORIZED)
                 return
         if page.need_admin:
             if not self.session.has_admin:
-                PagesError.generic(HTTPStatus.UNAUTHORIZED).handle(self)
+                self.send_error(HTTPStatus.UNAUTHORIZED)
                 return
 
         page.handle(self)
