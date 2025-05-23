@@ -140,17 +140,7 @@ class Widget:
     @classmethod
     def style(cls):
         r = []
-        r += """
-         <style>
-         table {
-          border-collapse: collapse;
-         }
-         td {
-          border-style: solid;
-          border-width: 1px;
-         }
-         </style>
-        """
+        r += '<link rel="stylesheet" type="text/css" href="/style.css" />'
         return r
 
     @classmethod
@@ -717,6 +707,16 @@ def main():
     data_chat = []
     data_kv = {}
 
+    style = """
+        table {
+         border-collapse: collapse;
+        }
+        td {
+         border-style: solid;
+         border-width: 1px;
+        }
+    """
+
     config = SimpleSiteConfig()
     config.cookie_domain = args.cookie_domain
     config.auth = Authenticator()
@@ -728,6 +728,7 @@ def main():
         "/q": PagesQuery(),
         "/sitemap": PagesMap(),
         "/test": PagesStatic("A Testable Page"),
+        "/style.css": PagesStatic(style, content_type="text/css"),
     }
 
     if hasattr(signal, 'SIGPIPE'):
