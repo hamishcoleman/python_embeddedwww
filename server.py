@@ -227,6 +227,17 @@ class Pages:
     need_admin = False
 
 
+class PagesStatic(Pages):
+    def __init__(self, body, content_type="text/html"):
+        self.body = body
+        self.content_type = content_type
+
+    def handle(self, handler):
+        handler.send_page(
+            HTTPStatus.OK,
+            self.body,
+            content_type=self.content_type,
+        )
 
 
 class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
@@ -298,11 +309,6 @@ class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         self.send_header('Content-type', content_type)
         self.end_headers()
         self.wfile.write(body)
-
-
-class PagesTest(Pages):
-    def handle(self, handler):
-        handler.send_page(HTTPStatus.OK, "A Testable Page")
 
 
 class PagesMap(Pages):
@@ -721,7 +727,7 @@ def main():
         "/notes": PagesChat(data_chat),
         "/q": PagesQuery(),
         "/sitemap": PagesMap(),
-        "/test": PagesTest(),
+        "/test": PagesStatic("A Testable Page"),
     }
 
     if hasattr(signal, 'SIGPIPE'):
