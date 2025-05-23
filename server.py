@@ -18,6 +18,12 @@ from http import HTTPStatus
 from types import MappingProxyType
 
 
+def _encoded_uuid():
+    random = uuid.uuid4().bytes
+    data = base64.urlsafe_b64encode(random).strip(b"=").decode("utf8")
+    return data
+
+
 class Session:
     def __init__(self):
         self.id = None
@@ -121,8 +127,7 @@ class Authenticator:
             return session
         session.state = "login"
 
-        rnd = uuid.uuid4().bytes
-        session.id = base64.urlsafe_b64encode(rnd).strip(b"=").decode("utf8")
+        session.id = _encoded_uuid()
         session.data = data
         self.sessions[session.id] = session.data
 
@@ -646,8 +651,7 @@ class SimpleSite(BetterHTTPRequestHandler):
         if self.get_cookie("uuid") is not None:
             return
 
-        random = uuid.uuid4().bytes
-        cookie = base64.urlsafe_b64encode(random).strip(b"=").decode("utf8")
+        cookie = _encoded_uuid()
 
         attribs = {
             "Expires": "Mon, 1-Jan-2035 00:00:00 GMT",
