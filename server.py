@@ -577,17 +577,19 @@ class PagesQuery(Pages):
                 return
 
             if b"a" in form:
-                if not self.session.has_auth:
+                if not handler.session.has_auth:
                     handler.send_error(HTTPStatus.UNAUTHORIZED)
                     return
 
                 action = form[b"a"][0].decode("utf8")
+                cmd, action_id = action.split("/")
 
-                if action.startswith("del/"):
-                    _, action_id = action.split("/")
-                    action_id = int(action_id)
+                if cmd == "del":
                     del self.queries[action_id]
-                # Allow
+                elif cmd == "allow":
+                    self.queries[action_id]["a"] = True
+                elif cmd == "deny":
+                    self.queries[action_id]["a"] = False
                 # Edit
                 else:
                     handler.send_error(HTTPStatus.BAD_REQUEST)
@@ -611,7 +613,7 @@ class PagesQuery(Pages):
 
             data += Widget.show_dict(
                 self.queries,
-                ["del"],
+                ["allow", "deny", "del"],
             )
 
             data += "</form>"
@@ -626,24 +628,35 @@ class PagesQuery(Pages):
 
 
 class PagesQueryAnswer(Pages):
-    def __init__(self, data):
+    def __init__(self, data, kv):
         self.queries = data
+        self.kv = kv
 
     def handle(self, handler):
         # TODO: hardcodes how deep the subtree is
         _, q, _id = handler.path.split("/")
 
         try:
-            allowed = self.queries[_id]["a"]
+            query = self.queries[_id]
         except KeyError:
             handler.send_error(HTTPStatus.NOT_FOUND)
             return
 
-        if allowed is None:
+        try:
+            allowed = query["a"]
+        except KeyError:
+            allowed = False
+
+        if not allowed:
             handler.send_error(HTTPStatus.NOT_FOUND)
             return
 
-        handler.send_page(HTTPStatus.OK, "value goes here")
+        try:
+            answer = self.kv[query["q"]]
+        except KeyError:
+            answer = None
+
+        handler.send_page(HTTPStatus.OK, answer)
 
 
 class PagesChat(Pages):
@@ -780,7 +793,7 @@ def main():
         "/style.css": PagesStatic(style, content_type="text/css"),
     }
     config.routes_subtree = {
-        "/q/": PagesQueryAnswer(data_query),
+        "/q/": PagesQueryAnswer(data_query, data_kv),
     }
 
     if hasattr(signal, 'SIGPIPE'):
