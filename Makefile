@@ -12,6 +12,7 @@ build-dep:
             flake8 \
             python3-pytest \
             python3-pytest-cov \
+	    shellcheck \
 
 install:
 	mkdir -p $(INSTALLDIR)
@@ -38,6 +39,7 @@ cover:
 
 lint:
 	flake8
+	shellcheck --format=gcc site_query.sh
 
 clean:
 	rm -rf htmlcov .coverage __pycache__/ .pytest_cache
