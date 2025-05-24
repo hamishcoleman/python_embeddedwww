@@ -16,8 +16,7 @@ set +e
 
 while true; do
     sleep 1
-    DATA=$(curl --silent --fail "$URL/$ID")
-    if [ $? -eq 0 ]; then
+    if DATA=$(curl --silent --fail "$URL/$ID"); then
         echo "$DATA"
         exit
     fi
