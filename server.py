@@ -786,10 +786,10 @@ def main():
         "/auth/login": PagesLogin(),
         "/auth/list": PagesAuthList(),
         "/kv": PagesKV(data_kv),
-        "/notes": PagesChat(data_chat),
         "/q": PagesQuery(data_query),
         "/sitemap": PagesMap(),
-        "/test": PagesStatic("A Testable Page"),
+        "/test/notes": PagesChat(data_chat),
+        "/test/page": PagesStatic("A Testable Page"),
         "/style.css": PagesStatic(style, content_type="text/css"),
     }
     config.routes_subtree = {
