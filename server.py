@@ -545,8 +545,8 @@ class PagesKV(Pages):
 
 
 class PagesQuery(Pages):
-    def __init__(self):
-        self.queries = {}
+    def __init__(self, data):
+        self.queries = data
 
     def handle(self, handler):
         if handler.command == "POST":
@@ -617,7 +617,20 @@ class PagesQueryAnswer(Pages):
         self.queries = data
 
     def handle(self, handler):
-        handler.send_page(HTTPStatus.OK, "test")
+        # TODO: hardcodes how deep the subtree is
+        _, q, _id = handler.path.split("/")
+
+        try:
+            allowed = self.queries[_id]["a"]
+        except KeyError:
+            handler.send_error(HTTPStatus.NOT_FOUND)
+            return
+
+        if allowed is None:
+            handler.send_error(HTTPStatus.NOT_FOUND)
+            return
+
+        handler.send_page(HTTPStatus.OK, "value goes here")
 
 
 class PagesChat(Pages):
@@ -748,7 +761,7 @@ def main():
         "/auth/list": PagesAuthList(),
         "/kv": PagesKV(data_kv),
         "/notes": PagesChat(data_chat),
-        "/q": PagesQuery(),
+        "/q": PagesQuery(data_query),
         "/sitemap": PagesMap(),
         "/test": PagesStatic("A Testable Page"),
         "/style.css": PagesStatic(style, content_type="text/css"),
