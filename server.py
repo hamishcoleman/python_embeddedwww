@@ -573,6 +573,7 @@ class PagesQuery(Pages):
                 self.queries[_id] = {
                     "q": query,
                     "a": None,
+                    "h": handler.headers["Host"],
                     "t": time.time(),
                 }
                 handler.send_header("Location", f"{handler.path}/{_id}")
