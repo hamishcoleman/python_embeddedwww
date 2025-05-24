@@ -272,14 +272,28 @@ class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         form = urllib.parse.parse_qs(data)
         return form
 
-    def _route2page(self):
+    def _route2page_obj(self):
+        """Returns the object needed to process this page"""
         try:
-            page = self.config.routes[self.path]
+            return self.config.routes[self.path]
         except KeyError:
+            pass
+
+        for prefix, page in self.config.routes_subtree.items():
+            if self.path.startswith(prefix):
+                return page
+
+        return None
+
+    def _route2render(self):
+        """Handle the page all the way to rendering output"""
+        page = self._route2page_obj()
+
+        if page is None:
             self.send_error(HTTPStatus.NOT_FOUND)
             return
 
-        # TODO: could add handler.need_session and avoid getting session
+        # TODO: could add page.need_session and avoid getting session
         self.session = self.config.auth.request2session(self)
         if page.need_auth:
             if not self.session.has_auth:
@@ -600,6 +614,14 @@ class PagesQuery(Pages):
         handler.send_page(HTTPStatus.OK, data)
 
 
+class PagesQueryAnswer(Pages):
+    def __init__(self, data):
+        self.queries = data
+
+    def handle(self, handler):
+        handler.send_page(HTTPStatus.OK, "test")
+
+
 class PagesChat(Pages):
     need_auth = True
 
@@ -665,18 +687,19 @@ class SimpleSite(BetterHTTPRequestHandler):
 
     def do_GET(self):
         self._check_uuid()
-        self._route2page()
+        self._route2render()
 
     def do_POST(self):
         self._check_uuid()
-        self._route2page()
+        self._route2render()
 
 
 class SimpleSiteConfig:
     def __init__(self):
         self.cookie_domain = None
         self.auth = None
-        self.routes = None
+        self.routes = {}
+        self.routes_subtree = {}
 
 
 def argparser():
@@ -707,6 +730,7 @@ def main():
 
     data_chat = []
     data_kv = {}
+    data_query = {}
 
     style = """
         table {
@@ -730,6 +754,9 @@ def main():
         "/sitemap": PagesMap(),
         "/test": PagesStatic("A Testable Page"),
         "/style.css": PagesStatic(style, content_type="text/css"),
+    }
+    config.routes_subtree = {
+        "/q/": PagesQueryAnswer(data_query),
     }
 
     if hasattr(signal, 'SIGPIPE'):
