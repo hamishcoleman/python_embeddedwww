@@ -358,8 +358,7 @@ class PagesLogin(Pages):
 
                 if handler.session.has_auth:
                     # Make reloading nicer
-                    # TODO: hardcodes the location of this page
-                    handler.send_header("Location", "login")
+                    handler.send_header("Location", handler.path)
                     handler.send_error(HTTPStatus.SEE_OTHER)
                     return
             else:
@@ -562,8 +561,7 @@ class PagesQuery(Pages):
                     "q": query,
                     "a": None,
                 }
-                # TODO: hardcodes location of this page
-                handler.send_header("Location", f"/q/{_id}")
+                handler.send_header("Location", f"{handler.path}/{_id}")
                 handler.send_page(HTTPStatus.CREATED, str(_id))
                 return
 
