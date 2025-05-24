@@ -11,6 +11,7 @@ import functools
 import http.server
 import signal
 import socketserver
+import subprocess
 import time
 import urllib.parse
 import uuid
@@ -23,6 +24,42 @@ def _encoded_uuid():
     random = uuid.uuid4().bytes
     data = base64.urlsafe_b64encode(random).strip(b"=").decode("utf8")
     return data
+
+
+def _tuple2pid(server, client):
+    # TODO:
+    # - confirm server and client are localhost
+
+    text = subprocess.getoutput(
+        f"ss -H -n -p -t 'dport = :{server[1]} and sport = :{client[1]}'",
+    )
+    try:
+        process_text = text.split()[5]
+        # users:(("curl",pid=1274227,fd=5))
+    except IndexError:
+        return None
+
+    # TODO: there could be multiple owners...
+    pid_kv = process_text.split(",")[1]
+    print("D", pid_kv)
+    pid_str = pid_kv.split("=")[1]
+
+    # Its an int, but we will just use it as a string in an open
+    return pid_str
+
+
+def _pid2cmdline(pid_str):
+    with open(f"/proc/{pid_str}/cmdline", "r") as f:
+        buf = f.read(1024)
+
+    return buf.replace("\x00", " ").strip()
+
+
+def _tuple2desc(server, client):
+    pid_str = _tuple2pid(server, client)
+    cmdline = _pid2cmdline(pid_str)
+    desc = f"pid={pid_str}, {cmdline}"
+    return desc
 
 
 class Session:
@@ -396,9 +433,15 @@ class PagesLogin(Pages):
         # - if we are behind a proxy, use the header instead of the
         #   client_address
 
-        # TODO:
-        # if handler.client_address[0] == "127.0.0.1":
-        #     data += pid/processname/args
+        describe = _tuple2desc(
+            handler.server.server_address,
+            handler.client_address,
+        )
+        data += f"""
+          <tr>
+           <th align=right>Desc:
+           <td>{describe}
+        """
 
         host = handler.headers["Host"]
         data += f"""
@@ -570,11 +613,16 @@ class PagesQuery(Pages):
 
                 # FIXME: better id
                 _id = _encoded_uuid()
+                describe = _tuple2desc(
+                    handler.server.server_address,
+                    handler.client_address,
+                )
                 self.queries[_id] = {
                     "q": query,
                     "a": None,
                     "h": handler.headers["Host"],
                     "t": time.time(),
+                    "desc": describe,
                 }
                 handler.send_header("Location", f"{handler.path}/{_id}")
                 handler.send_page(HTTPStatus.CREATED, str(_id))
