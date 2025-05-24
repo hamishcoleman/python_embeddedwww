@@ -11,6 +11,7 @@ import functools
 import http.server
 import signal
 import socketserver
+import time
 import urllib.parse
 import uuid
 
@@ -94,6 +95,7 @@ class Authenticator:
 
         data = fake_user[user].copy()
         data["user"] = user
+        data["createdat"] = time.time()
 
         # We enforce that the session data is readonly as that will allow
         # the use of JWT (or similar) to populate the session data
@@ -571,6 +573,7 @@ class PagesQuery(Pages):
                 self.queries[_id] = {
                     "q": query,
                     "a": None,
+                    "t": time.time(),
                 }
                 handler.send_header("Location", f"{handler.path}/{_id}")
                 handler.send_page(HTTPStatus.CREATED, str(_id))
