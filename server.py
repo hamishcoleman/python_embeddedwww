@@ -168,7 +168,7 @@ class Widget:
     def show_dict(cls, d, actions):
         r = []
         r += """
-         <table>
+         <table class="w">
           <tr>
            <th>ID
            <th>Data
@@ -178,8 +178,8 @@ class Widget:
         for k, v in d.items():
             r += f"""
              <tr>
-              <td>{k}
-              <td>{v}
+              <td class="w">{k}
+              <td class="w">{v}
               <td>
             """
             for action in actions:
@@ -206,8 +206,8 @@ class Widget:
         for i in range(len(dl)):
             r += f"""
              <tr>
-              <td>{i}
-              <td>{dl[i]}
+              <td class="w">{i}
+              <td class="w">{dl[i]}
               <td>
             """
             for action in actions:
@@ -774,10 +774,10 @@ def main():
     data_query = {}
 
     style = """
-        table {
+        table.w {
          border-collapse: collapse;
         }
-        td {
+        td.w {
          border-style: solid;
          border-width: 1px;
         }
