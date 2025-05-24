@@ -654,7 +654,8 @@ class PagesQueryAnswer(Pages):
         try:
             answer = self.kv[query["q"]]
         except KeyError:
-            answer = None
+            handler.send_error(HTTPStatus.NOT_FOUND)
+            return
 
         handler.send_page(HTTPStatus.OK, answer)
 
