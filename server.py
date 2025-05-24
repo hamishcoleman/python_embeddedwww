@@ -156,6 +156,13 @@ class Widget:
         return r
 
     @classmethod
+    def navbar(cls):
+        r = []
+        r += '<a href="/sitemap">sitemap</a>'
+        # TODO: the above hardcodes the location of the sitemap
+        return r
+
+    @classmethod
     def show_dict(cls, d, actions):
         r = []
         r += """
@@ -320,6 +327,7 @@ class PagesMap(Pages):
         data = []
         data += Widget.head("Index")
         data += "<body>"
+        data += Widget.navbar()
         data += "<ul>"
 
         for path, page in sorted(handler.config.routes.items()):
@@ -369,7 +377,9 @@ class PagesLogin(Pages):
 
         data = []
         data = Widget.head("Login")
-        data += """<body>
+        data += "<body>"
+        data += Widget.navbar()
+        data += """
            <form method="post">
             <table>
         """
@@ -411,10 +421,9 @@ class PagesLogin(Pages):
              <td>{handler.session.user}
             <tr>
             <tr>
-             <td><a href="/sitemap">sitemap</a>
+             <th>
              <td align=right><button name="a" value="logout">Logout</button>
             """
-            # TODO: the above hardcodes the location of the sitemap
         else:
             data += """
             <tr>
@@ -477,9 +486,9 @@ class PagesAuthList(Pages):
 
         data = []
         data += Widget.head("Sessions")
-        data += """<body>
-         <form method="post">
-        """
+        data += "<body>"
+        data += Widget.navbar()
+        data += '<form method="post">'
 
         data += Widget.show_dict(
             handler.config.auth.sessions,
@@ -522,7 +531,9 @@ class PagesKV(Pages):
 
         data = []
         data += Widget.head("KV")
-        data += """<body>
+        data += "<body>"
+        data += Widget.navbar()
+        data += """
          <form method="post">
           <input type="text" name="key" autofocus>
           <input type="text" name="val">
@@ -584,7 +595,9 @@ class PagesQuery(Pages):
 
         data = []
         data += Widget.head("Queries")
-        data += """<body>
+        data += "<body>"
+        data += Widget.navbar()
+        data += """
          <form method="post">
           <input type="text" name="q" autofocus>
           <button name="qq" value="query">query</button>
@@ -648,9 +661,9 @@ class PagesChat(Pages):
 
         data = []
         data += Widget.head("Chat")
-        data += """<body>
-          <table>
-        """
+        data += "<body>"
+        data += Widget.navbar()
+        data += "<table>"
 
         for i in self.chat:
             data += f"""
