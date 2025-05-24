@@ -533,7 +533,7 @@ class PagesKV(Pages):
 
 class PagesQuery(Pages):
     def __init__(self):
-        self.queries = []
+        self.queries = {}
 
     def handle(self, handler):
         if handler.command == "POST":
@@ -543,13 +543,14 @@ class PagesQuery(Pages):
                 query = form[b"q"][0].decode("utf8")
 
                 # FIXME: better id
-                _id = len(self.queries)
-                self.queries.append({
-                    "id": _id,
+                _id = _encoded_uuid()
+                self.queries[_id] = {
                     "q": query,
                     "a": None,
-                })
-                handler.send_page(HTTPStatus.OK, str(_id))
+                }
+                # TODO: hardcodes location of this page
+                handler.send_header("Location", f"/q/{_id}")
+                handler.send_page(HTTPStatus.CREATED, str(_id))
                 return
 
             if b"a" in form:
@@ -583,7 +584,7 @@ class PagesQuery(Pages):
              <form method="post">
             """
 
-            data += Widget.show_dictlist(
+            data += Widget.show_dict(
                 self.queries,
                 ["del"],
             )
