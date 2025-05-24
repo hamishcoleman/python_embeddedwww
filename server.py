@@ -431,7 +431,7 @@ class PagesLogin(Pages):
             <tr>
             <tr>
              <th align=right><label for="user">Username:</label>
-             <td><input type="text" id="user" name="user">
+             <td><input type="text" id="user" name="user" autofocus>
             <tr>
              <th align=right><label for="pass">Password:</label>
              <td><input type="password" id="pass" name="pass">
