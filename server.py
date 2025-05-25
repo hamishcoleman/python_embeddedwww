@@ -261,6 +261,20 @@ class Widget:
 class Pages:
     need_auth = False
     need_admin = False
+    request = 0
+
+
+class PagesMetrics(Pages):
+    def handle(self, handler):
+        data = []
+        for route, page in handler.config.routes.items():
+            data += f'site_request{{route="{route}"}} {page.request}\n'
+
+        for route, page in handler.config.routes_subtree.items():
+            data += f'site_request{{route="{route}"}} {page.request}\n'
+
+        data = "".join(data)
+        handler.send_page(HTTPStatus.OK, data)
 
 
 class PagesStatic(Pages):
@@ -338,6 +352,8 @@ class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         if page is None:
             self.send_error(HTTPStatus.NOT_FOUND)
             return
+
+        page.request += 1
 
         # TODO: could add page.need_session and avoid getting session
         self.session = self.config.auth.request2session(self)
@@ -839,6 +855,7 @@ def main():
         "/auth/login": PagesLogin(),
         "/auth/list": PagesAuthList(),
         "/kv": PagesKV(data_kv),
+        "/metrics": PagesMetrics(),
         "/q": PagesQuery(data_query),
         "/sitemap": PagesMap(),
         "/test/notes": PagesChat(data_chat),
