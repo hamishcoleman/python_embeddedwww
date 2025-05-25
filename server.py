@@ -281,6 +281,7 @@ class PagesStatic(Pages):
     def __init__(self, body, content_type="text/html"):
         self.body = body
         self.content_type = content_type
+        super().__init__()
 
     def handle(self, handler):
         handler.send_page(
@@ -571,6 +572,7 @@ class PagesKV(Pages):
 
     def __init__(self, data):
         self.data = data
+        super().__init__()
 
     def handle(self, handler):
         if handler.command == "POST":
@@ -619,6 +621,7 @@ class PagesKV(Pages):
 class PagesQuery(Pages):
     def __init__(self, data):
         self.queries = data
+        super().__init__()
 
     def handle(self, handler):
         if handler.command == "POST":
@@ -699,6 +702,7 @@ class PagesQueryAnswer(Pages):
     def __init__(self, data, kv):
         self.queries = data
         self.kv = kv
+        super().__init__()
 
     def handle(self, handler):
         # TODO: hardcodes how deep the subtree is
@@ -733,6 +737,7 @@ class PagesChat(Pages):
 
     def __init__(self, chat_data):
         self.chat = chat_data
+        super().__init__()
 
     def handle(self, handler):
         if handler.command == "POST":
