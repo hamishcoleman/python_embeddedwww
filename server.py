@@ -295,6 +295,7 @@ class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     def __init__(self, config, *args, **kwargs):
         # save the config object
         self.config = config
+        self.time_start = time.time()
         super().__init__(*args, **kwargs)
 
     # The default method happily appends the responce /after/ adding headers,
@@ -640,7 +641,7 @@ class PagesQuery(Pages):
                     "q": query,
                     "a": None,
                     "h": handler.headers["Host"],
-                    "t": time.time(),
+                    "t": handler.time_start,
                     "desc": describe,
                 }
                 handler.send_header("Location", f"{handler.path}/{_id}")
