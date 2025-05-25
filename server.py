@@ -261,7 +261,10 @@ class Widget:
 class Pages:
     need_auth = False
     need_admin = False
-    request = 0
+
+    def __init__(self):
+        self.request = 0
+        self.elapsed = float()
 
 
 class PagesMetrics(Pages):
@@ -269,9 +272,11 @@ class PagesMetrics(Pages):
         data = []
         for route, page in handler.config.routes.items():
             data += f'site_request_count{{route="{route}"}} {page.request}\n'
+            data += f'site_request_seconds{{route="{route}"}} {page.elapsed}\n'
 
         for route, page in handler.config.routes_subtree.items():
             data += f'site_request_count{{route="{route}"}} {page.request}\n'
+            data += f'site_request_seconds{{route="{route}"}} {page.elapsed}\n'
 
         data = "".join(data)
         handler.send_page(HTTPStatus.OK, data)
@@ -297,6 +302,12 @@ class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         self.config = config
         self.time_start = time.time()
         super().__init__(*args, **kwargs)
+
+    def __del__(self):
+        time_finish = time.time()
+        elapsed = time_finish - self.time_start
+        if self.page is not None:
+            self.page.elapsed += elapsed
 
     # The default method happily appends the responce /after/ adding headers,
     # which results in an invalid reply packet
@@ -349,26 +360,26 @@ class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
     def _route2render(self):
         """Handle the page all the way to rendering output"""
-        page = self._route2page_obj()
+        self.page = self._route2page_obj()
 
-        if page is None:
+        if self.page is None:
             self.send_error(HTTPStatus.NOT_FOUND)
             return
 
-        page.request += 1
+        self.page.request += 1
 
         # TODO: could add page.need_session and avoid getting session
         self.session = self.config.auth.request2session(self)
-        if page.need_auth:
+        if self.page.need_auth:
             if not self.session.has_auth:
                 self.send_error(HTTPStatus.UNAUTHORIZED)
                 return
-        if page.need_admin:
+        if self.page.need_admin:
             if not self.session.has_admin:
                 self.send_error(HTTPStatus.UNAUTHORIZED)
                 return
 
-        page.handle(self)
+        self.page.handle(self)
 
     def send_page(self, code, body, content_type="text/html"):
         if isinstance(body, str):
