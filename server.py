@@ -268,10 +268,10 @@ class PagesMetrics(Pages):
     def handle(self, handler):
         data = []
         for route, page in handler.config.routes.items():
-            data += f'site_request{{route="{route}"}} {page.request}\n'
+            data += f'site_request_count{{route="{route}"}} {page.request}\n'
 
         for route, page in handler.config.routes_subtree.items():
-            data += f'site_request{{route="{route}"}} {page.request}\n'
+            data += f'site_request_count{{route="{route}"}} {page.request}\n'
 
         data = "".join(data)
         handler.send_page(HTTPStatus.OK, data)
