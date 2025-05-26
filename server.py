@@ -306,15 +306,6 @@ class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         self.time_start = time.time()
         super().__init__(*args, **kwargs)
 
-    def __del__(self):
-        time_finish = time.time()
-        elapsed = time_finish - self.time_start
-        try:
-            if self.page is not None:
-                self.page.elapsed += elapsed
-        except AttributeError:
-            pass
-
     # The default method happily appends the responce /after/ adding headers,
     # which results in an invalid reply packet
     def send_response_only(self, code, message=None):
@@ -386,6 +377,18 @@ class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 return
 
         self.page.handle(self)
+
+    def render_page(self):
+        self._route2render()
+        self.wfile.flush()
+
+        time_finish = time.time()
+        elapsed = time_finish - self.time_start
+        try:
+            if self.page is not None:
+                self.page.elapsed += elapsed
+        except AttributeError:
+            pass
 
     def send_page(self, code, body, content_type="text/html"):
         if isinstance(body, str):
@@ -874,11 +877,11 @@ class SimpleSite(BetterHTTPRequestHandler):
 
     def do_GET(self):
         self._check_uuid()
-        self._route2render()
+        self.render_page()
 
     def do_POST(self):
         self._check_uuid()
-        self._route2render()
+        self.render_page()
 
 
 class SimpleSiteConfig:
