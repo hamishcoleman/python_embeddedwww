@@ -509,10 +509,10 @@ class PagesLogin(Pages):
             <tr>
             <tr>
              <th align=right><label for="user">Username:</label>
-             <td><input type="text" id="user" name="user" autofocus>
+             <td><input type="text" id="user" name="user" required autofocus>
             <tr>
              <th align=right><label for="pass">Password:</label>
-             <td><input type="password" id="pass" name="pass">
+             <td><input type="password" id="pass" name="pass" required>
             <tr>
              <th>
              <td align=right><button name="a" value="login">Login</button>
@@ -670,7 +670,7 @@ class PagesKVEdit(Pages):
         data += f"""
           <form method="post">
            <input type="text" name="key" readonly value="{key}">
-           <input type="text" name="val" value="{val}" autofocus>
+           <input type="text" name="val" value="{val}" required autofocus>
            <button name="a" value="add">edit</button>
           </form>
          </body>
@@ -745,7 +745,7 @@ class PagesQuery(Pages):
         data += Widget.navbar()
         data += """
          <form method="post">
-          <input type="text" name="q" autofocus>
+          <input type="text" name="q" required autofocus>
           <button name="qq" value="query">query</button>
          </form>
         """
@@ -834,7 +834,7 @@ class PagesChat(Pages):
          <tr>
           <td>
            <form method="post">
-            <input type="text" id="chat" name="chat" autofocus>
+            <input type="text" id="chat" name="chat" required autofocus>
             <input type="submit" value="Submit">
            </form>
          </table>
