@@ -681,6 +681,11 @@ class PagesQuery(Pages):
                     handler.send_error(HTTPStatus.BAD_REQUEST)
                     return
 
+                # Make refreshing nicer
+                handler.send_header("Location", handler.path)
+                handler.send_error(HTTPStatus.SEE_OTHER)
+                return
+
         data = []
         data += Widget.head("Queries")
         data += "<body>"
