@@ -282,7 +282,7 @@ class PagesMetrics(Pages):
             data += f'site_request_seconds{{route="{route}"}} {page.elapsed}\n'
 
         data = "".join(data)
-        handler.send_page(HTTPStatus.OK, data)
+        handler.send_page(HTTPStatus.OK, data, content_type="text/plain")
 
 
 class PagesStatic(Pages):
