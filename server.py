@@ -598,9 +598,12 @@ class PagesKV(Pages):
             action = form[b"a"][0].decode("utf8")
 
             if action == "add":
-                k = form[b"key"][0].decode("utf8")
-                v = form[b"val"][0].decode("utf8")
-                self.data[k] = v
+                try:
+                    k = form[b"key"][0].decode("utf8")
+                    v = form[b"val"][0].decode("utf8")
+                    self.data[k] = v
+                except KeyError:
+                    pass
             elif action.startswith("del/"):
                 _, action_id = action.split("/")
                 del self.data[action_id]
