@@ -793,13 +793,13 @@ class PagesQueryAnswer(Pages):
             allowed = False
 
         if not allowed:
-            handler.send_error(HTTPStatus.NOT_FOUND)
+            handler.send_error(HTTPStatus.FORBIDDEN)
             return
 
         try:
             answer = self.kv[query["q"]]
         except KeyError:
-            handler.send_error(HTTPStatus.NOT_FOUND)
+            handler.send_error(HTTPStatus.CONFLICT)
             return
 
         handler.send_page(HTTPStatus.OK, answer)
