@@ -604,8 +604,12 @@ class PagesKV(Pages):
             elif action.startswith("del/"):
                 _, action_id = action.split("/")
                 del self.data[action_id]
-            # elif action == "edit":
-            #     self.data[action_id] = form[b"val"][0].decode("utf8")
+            elif action.startswith("edit/"):
+                _, action_id = action.split("/")
+                action_id = urllib.parse.quote(action_id)
+                handler.send_header("Location", f"{handler.path}/{action_id}")
+                handler.send_error(HTTPStatus.SEE_OTHER)
+                return
             else:
                 handler.send_error(HTTPStatus.BAD_REQUEST)
                 return
@@ -623,13 +627,54 @@ class PagesKV(Pages):
 
         data += Widget.show_dict(
             self.data,
-            ["del"],
+            ["edit", "del"],
         )
 
         data += """
            </form>
           </body>
          </html>
+        """
+
+        data = "".join(data)
+        handler.send_page(HTTPStatus.OK, data)
+
+
+class PagesKVEdit(Pages):
+    need_auth = True
+
+    def __init__(self, kv):
+        self.kv = kv
+        super().__init__()
+
+    def handle(self, handler):
+        # TODO: hardcodes how deep the subtree is
+        _, path, key = handler.path.split("/")
+
+        key = urllib.parse.unquote(key)
+
+        if handler.command == "POST":
+            form = handler.get_formdata()
+            val = form[b"val"][0].decode("utf8")
+            self.kv[key] = val
+            handler.send_header("Location", f"/{path}")
+            handler.send_error(HTTPStatus.SEE_OTHER)
+            return
+
+        val = self.kv.get(key, "")
+
+        data = []
+        data += Widget.head("KV Edit")
+        data += "<body>"
+        data += Widget.navbar()
+        data += f"""
+          <form method="post">
+           <input type="text" name="key" readonly value="{key}">
+           <input type="text" name="val" value="{val}" autofocus>
+           <button name="a" value="add">edit</button>
+          </form>
+         </body>
+        </html>
         """
 
         data = "".join(data)
@@ -679,7 +724,12 @@ class PagesQuery(Pages):
                     self.queries[action_id]["a"] = True
                 elif cmd == "deny":
                     self.queries[action_id]["a"] = False
-                # Edit
+                elif cmd == "edit":
+                    q_safe = urllib.parse.quote(self.queries[action_id]["q"])
+                    handler.send_header("Location", f"/kv/{q_safe}")
+                    # TODO: hardcodes the location of kv
+                    handler.send_error(HTTPStatus.SEE_OTHER)
+                    return
                 else:
                     handler.send_error(HTTPStatus.BAD_REQUEST)
                     return
@@ -707,7 +757,7 @@ class PagesQuery(Pages):
 
             data += Widget.show_dict(
                 self.queries,
-                ["allow", "deny", "del"],
+                ["allow", "deny", "del", "edit"],
             )
 
             data += "</form>"
@@ -891,6 +941,7 @@ def main():
         "/style.css": PagesStatic(style, content_type="text/css"),
     }
     config.routes_subtree = {
+        "/kv/": PagesKVEdit(data_kv),
         "/q/": PagesQueryAnswer(data_query, data_kv),
     }
 
