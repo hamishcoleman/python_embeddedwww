@@ -14,10 +14,10 @@ if [ "$QUERY" = "-h" ]; then
     exit 1
 fi
 
-URL="http://$(hostname):$PORT/q"
+URL="http://localhost:$PORT/q"
 
 set -e
-ID=$(curl --silent --data-urlencode "q=$QUERY" "$URL")
+ID=$(curl --silent -H "Host: $(hostname)" --data-urlencode "q=$QUERY" "$URL")
 set +e
 
 while true; do
