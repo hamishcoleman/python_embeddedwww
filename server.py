@@ -309,8 +309,11 @@ class BetterHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     def __del__(self):
         time_finish = time.time()
         elapsed = time_finish - self.time_start
-        if self.page is not None:
-            self.page.elapsed += elapsed
+        try:
+            if self.page is not None:
+                self.page.elapsed += elapsed
+        except AttributeError:
+            pass
 
     # The default method happily appends the responce /after/ adding headers,
     # which results in an invalid reply packet
