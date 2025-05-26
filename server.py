@@ -57,6 +57,9 @@ def _pid2cmdline(pid_str):
 
 def _tuple2desc(server, client):
     pid_str = _tuple2pid(server, client)
+    if pid_str is None:
+        return "Remote"
+
     cmdline = _pid2cmdline(pid_str)
     desc = f"pid={pid_str}, {cmdline}"
     return desc
