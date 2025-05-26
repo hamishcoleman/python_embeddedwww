@@ -700,9 +700,9 @@ class PagesQuery(Pages):
                     handler.client_address,
                 )
                 self.queries[_id] = {
-                    "q": query,
                     "a": None,
                     "h": handler.headers["Host"],
+                    "q": query,
                     "t": handler.time_start,
                     "desc": describe,
                 }
