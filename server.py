@@ -620,8 +620,8 @@ class PagesKV(Pages):
         data += Widget.navbar()
         data += """
          <form method="post">
-          <input type="text" name="key" autofocus>
-          <input type="text" name="val">
+          <input type="text" name="key" placeholder="key" autofocus>
+          <input type="text" name="val" placeholder="val">
           <button name="a" value="add">add</button>
         """
 
