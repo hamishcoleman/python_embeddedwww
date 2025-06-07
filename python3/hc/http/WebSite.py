@@ -10,12 +10,29 @@ from types import MappingProxyType
 
 
 def _encoded_uuid():
+    """
+    Generate a random uuid and encode it for easy use.
+    """
+    # TODO:
+    # - denser encoding would be better
+
     random = uuid.uuid4().bytes
     data = base64.urlsafe_b64encode(random).strip(b"=").decode("utf8")
     return data
 
 
 class Session:
+    """
+    Information about the current user login and their session is accessed
+    via a Session object.
+
+    During normal requests, the Authenticator will create the session object
+    from the request.  This fields will be populated by the Authenticator and
+    then this information is available to any page handlers.
+
+    During login, the Authenticator will create the session object from its
+    login information and ask the Session object to update the response.
+    """
     def __init__(self):
         self.id = None
         self.data = None
@@ -56,6 +73,15 @@ class Session:
 
 
 class Authenticator:
+    """
+    The Authenticator object is used on all requests and logins to validate
+    all the details.
+
+    This is currently essentially a dummy implementation.
+
+    It is expected that things like persisting session state into cookies or
+    authenticating with JWT can be implemented by subclassing this class.
+    """
     def __init__(self):
         self.sessions = {}
         # TODO: param to load auth table
@@ -131,6 +157,7 @@ class Authenticator:
 
 
 class Pages:
+    """The base Page handler class.  This is subclassed to build pages"""
     need_auth = False
     need_admin = False
 
@@ -169,6 +196,14 @@ class PagesStatic(Pages):
 
 
 class Config:
+    """
+    Provide site configuration.  Each instance of RequestHandler will be
+    passed this config, so it could be used for Website-Wide configuration.
+
+    Normally it is expected that the object instances in the routes dicts
+    will have been created with any persistant state information for the
+    operation of the site and this is config for the infrastructure.
+    """
     def __init__(self):
         self.Widget = hc.html.Widget.Default
         self.auth = None
