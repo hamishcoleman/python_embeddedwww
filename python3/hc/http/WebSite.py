@@ -131,7 +131,7 @@ class Authenticator:
 
     def request2session(self, request):
         session = Session.from_request(request)
-        if session.id:
+        if session.id and session.data is None:
             try:
                 session.data = self.sessions[session.id]
                 session.state = "login"
