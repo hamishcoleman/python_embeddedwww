@@ -69,265 +69,16 @@ def _tuple2desc(server, client):
     return desc
 
 
-class PagesLogin(hc.http.WebSite.Pages):
-    def handle(self, handler):
-        if handler.command == "POST":
-            form = handler.get_formdata()
-            action = form[b"a"][0].decode("utf8")
+class PagesLogin(hc.http.WebSite.PagesLogin):
+    def set_attribs(self, handler):
+        # Add our custom fields to the login page
 
-            if action == "login":
-                user = form[b"user"][0].decode("utf8")
-                password = form[b"pass"][0].decode("utf8")
-                handler.session = handler.config.auth.login2session(
-                    handler,
-                    user,
-                    password
-                )
-
-                if handler.session.has_auth:
-                    # Make reloading nicer
-                    handler.send_header("Location", handler.path)
-                    handler.send_error(HTTPStatus.SEE_OTHER)
-                    return
-            else:
-                try:
-                    handler.config.auth.end_session(handler.session)
-                except KeyError:
-                    handler.session.state = "bad"
-
-        data = []
-        data = hc.html.Widget.head("Login")
-        data += "<body>"
-        data += hc.html.Widget.navbar()
-        data += """
-           <form method="post">
-            <table>
-        """
-
-        data += f"""
-          <tr>
-           <th align=right>Client:
-           <td>{handler.client_address}
-        """
-
-        # TODO:
-        # - if we are behind a proxy, use the header instead of the
-        #   client_address
-
-        describe = _tuple2desc(
-            handler.server.server_address,
-            handler.client_address,
-        )
-        data += f"""
-          <tr>
-           <th align=right>Desc:
-           <td>{describe}
-        """
-
-        host = handler.headers["Host"]
-        data += f"""
-          <tr>
-           <th align=right>Host:
-           <td>{host}
-        """
-
-        cookie_uuid = handler.get_cookie("uuid")
-        if cookie_uuid:
-            data += f"""
-            <tr>
-             <th align=right>UUID:
-             <td>{cookie_uuid}
-            """
-
-        if handler.session.has_auth:
-            data += f"""
-            <tr>
-            <tr>
-             <th align=right><label for="user">Username:</label>
-             <td>{handler.session.user}
-            <tr>
-            <tr>
-             <th>
-             <td align=right><button name="a" value="logout">Logout</button>
-            """
-        else:
-            data += """
-            <tr>
-            <tr>
-             <th align=right><label for="user">Username:</label>
-             <td><input type="text" id="user" name="user" required autofocus>
-            <tr>
-             <th align=right><label for="pass">Password:</label>
-             <td><input type="password" id="pass" name="pass" required>
-            <tr>
-             <th>
-             <td align=right><button name="a" value="login">Login</button>
-            """
-
-        if handler.session.state == "bad":
-            data += """
-            <tr>
-             <th>
-             <td>Bad Attempt
-            """
-            code = HTTPStatus.UNAUTHORIZED
-        else:
-            code = HTTPStatus.OK
-
-        data += """
-           </table>
-          </form>
-          </body>
-        """
-
-        data = "".join(data)
-        handler.send_page(code, data)
-
-
-class PagesAuthList(hc.http.WebSite.Pages):
-    need_auth = True
-    need_admin = True
-
-    def handle(self, handler):
-        if handler.command == "POST":
-            form = handler.get_formdata()
-            action = form[b"a"][0].decode("utf8")
-
-            action, action_id = action.split("/")
-            action_session = hc.http.WebSite.Session()
-            action_session.id = action_id
-
-            if action == "del":
-                handler.config.auth.end_session(action_session)
-            elif action == "clone":
-                handler.config.auth.replace_data(action_session, self.session)
-
-                # TODO: hardcodes the location of this page
-                handler.send_header("Location", "login")
-                handler.send_error(HTTPStatus.SEE_OTHER)
-                return
-            else:
-                handler.send_error(HTTPStatus.BAD_REQUEST)
-                return
-
-        data = []
-        data += hc.html.Widget.head("Sessions")
-        data += "<body>"
-        data += hc.html.Widget.navbar()
-        data += '<form method="post">'
-
-        data += hc.html.Widget.show_dict(
-            handler.config.auth.sessions,
-            ["del", "clone"],
-        )
-
-        data += """
-           </form>
-          </body>
-         </html>
-        """
-
-        data = "".join(data)
-        handler.send_page(HTTPStatus.OK, data)
-
-
-class PagesKV(hc.http.WebSite.Pages):
-    need_auth = True
-
-    def __init__(self, data):
-        self.data = data
-        super().__init__()
-
-    def handle(self, handler):
-        if handler.command == "POST":
-            form = handler.get_formdata()
-            action = form[b"a"][0].decode("utf8")
-
-            if action == "add":
-                try:
-                    k = form[b"key"][0].decode("utf8")
-                    v = form[b"val"][0].decode("utf8")
-                    self.data[k] = v
-                except KeyError:
-                    pass
-            elif action.startswith("del/"):
-                _, action_id = action.split("/")
-                del self.data[action_id]
-            elif action.startswith("edit/"):
-                _, action_id = action.split("/")
-                action_id = urllib.parse.quote(action_id)
-                handler.send_header("Location", f"{handler.path}/{action_id}")
-                handler.send_error(HTTPStatus.SEE_OTHER)
-                return
-            else:
-                handler.send_error(HTTPStatus.BAD_REQUEST)
-                return
-
-        data = []
-        data += hc.html.Widget.head("KV")
-        data += "<body>"
-        data += hc.html.Widget.navbar()
-        data += """
-         <form method="post">
-          <input type="text" name="key" placeholder="key" autofocus>
-          <input type="text" name="val" placeholder="val">
-          <button name="a" value="add">add</button>
-        """
-
-        data += hc.html.Widget.show_dict(
-            self.data,
-            ["edit", "del"],
-        )
-
-        data += """
-           </form>
-          </body>
-         </html>
-        """
-
-        data = "".join(data)
-        handler.send_page(HTTPStatus.OK, data)
-
-
-class PagesKVEdit(hc.http.WebSite.Pages):
-    need_auth = True
-
-    def __init__(self, kv):
-        self.kv = kv
-        super().__init__()
-
-    def handle(self, handler):
-        # TODO: hardcodes how deep the subtree is
-        _, path, key = handler.path.split("/")
-
-        key = urllib.parse.unquote(key)
-
-        if handler.command == "POST":
-            form = handler.get_formdata()
-            val = form[b"val"][0].decode("utf8")
-            self.kv[key] = val
-            handler.send_header("Location", f"/{path}")
-            handler.send_error(HTTPStatus.SEE_OTHER)
-            return
-
-        val = self.kv.get(key, "")
-
-        data = []
-        data += hc.html.Widget.head("KV Edit")
-        data += "<body>"
-        data += hc.html.Widget.navbar()
-        data += f"""
-          <form method="post">
-           <input type="text" name="key" readonly value="{key}">
-           <input type="text" name="val" value="{val}" required autofocus>
-           <button name="a" value="add">edit</button>
-          </form>
-         </body>
-        </html>
-        """
-
-        data = "".join(data)
-        handler.send_page(HTTPStatus.OK, data)
+        self.attribs["Desc"] = _tuple2desc(
+                handler.server.server_address,
+                handler.client_address,
+            )
+        self.attribs["UUID"] = handler.get_cookie("uuid")
+        super().set_attribs(handler)
 
 
 class PagesQuery(hc.http.WebSite.Pages):
@@ -527,12 +278,10 @@ class SimpleSite(hc.http.WebSite.RequestHandler):
         self.render_page()
 
 
-class SimpleSiteConfig:
+class SimpleSiteConfig(hc.http.WebSite.Config):
     def __init__(self):
+        super().__init__()
         self.cookie_domain = None
-        self.auth = None
-        self.routes = {}
-        self.routes_subtree = {}
 
 
 def argparser():
@@ -580,8 +329,8 @@ def main():
     config.auth = hc.http.WebSite.Authenticator()
     config.routes = {
         "/auth/login": PagesLogin(),
-        "/auth/list": PagesAuthList(),
-        "/kv": PagesKV(data_kv),
+        "/auth/list": hc.http.WebSite.PagesAuthList(),
+        "/kv": hc.http.WebSite.PagesKV(data_kv),
         "/metrics": hc.http.WebSite.PagesMetrics(),
         "/q": PagesQuery(data_query),
         "/sitemap": hc.http.WebSite.PagesMap(),
@@ -593,7 +342,7 @@ def main():
         ),
     }
     config.routes_subtree = {
-        "/kv/": PagesKVEdit(data_kv),
+        "/kv/": hc.http.WebSite.PagesKVEdit(data_kv),
         "/q/": PagesQueryAnswer(data_query, data_kv),
     }
 

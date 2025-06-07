@@ -23,6 +23,8 @@ class Session:
 
     @property
     def user(self):
+        if self.data is None:
+            return None
         return self.data["user"]
 
     @property
@@ -166,6 +168,13 @@ class PagesStatic(Pages):
         )
 
 
+class Config:
+    def __init__(self):
+        self.auth = None
+        self.routes = {}
+        self.routes_subtree = {}
+
+
 class RequestHandler(http.server.BaseHTTPRequestHandler):
     def __init__(self, config, *args, **kwargs):
         # save the config object
@@ -287,6 +296,252 @@ class PagesMap(Pages):
          </ul>
          </body>
          </html>
+        """
+
+        data = "".join(data)
+        handler.send_page(HTTPStatus.OK, data)
+
+
+class PagesLogin(Pages):
+    def __init__(self):
+        super().__init__()
+        self.attribs = {}
+
+    def set_attribs(self, handler):
+        """Set the info that is shown on the login page.  Overridable"""
+        self.attribs["Client"] = handler.client_address
+        # TODO:
+        # - if we are behind a proxy, use the header instead of the
+        #   client_address
+
+        self.attribs["Host"] = handler.headers["Host"]
+        self.attribs["Username"] = handler.session.user
+
+    def handle(self, handler):
+        if handler.command == "POST":
+            form = handler.get_formdata()
+            action = form[b"a"][0].decode("utf8")
+
+            if action == "login":
+                user = form[b"user"][0].decode("utf8")
+                password = form[b"pass"][0].decode("utf8")
+                handler.session = handler.config.auth.login2session(
+                    handler,
+                    user,
+                    password
+                )
+
+                if handler.session.has_auth:
+                    # Make reloading nicer
+                    handler.send_header("Location", handler.path)
+                    handler.send_error(HTTPStatus.SEE_OTHER)
+                    return
+            else:
+                try:
+                    handler.config.auth.end_session(handler.session)
+                except KeyError:
+                    handler.session.state = "bad"
+
+        self.set_attribs(handler)
+
+        data = []
+        data = hc.html.Widget.head("Login")
+        data += "<body>"
+        data += hc.html.Widget.navbar()
+        data += """
+           <form method="post">
+            <table>
+        """
+
+        for k, v in self.attribs.items():
+            if v is None:
+                continue
+            data += f"""
+              <tr>
+               <th align=right>{k}:
+               <td>{v}
+            """
+
+        if handler.session.has_auth:
+            data += """
+            <tr>
+            <tr>
+             <th>
+             <td align=right><button name="a" value="logout">Logout</button>
+            """
+        else:
+            data += """
+            <tr>
+             <th align=right><label for="user">Username:</label>
+             <td><input type="text" id="user" name="user" required autofocus>
+            <tr>
+             <th align=right><label for="pass">Password:</label>
+             <td><input type="password" id="pass" name="pass" required>
+            <tr>
+             <th>
+             <td align=right><button name="a" value="login">Login</button>
+            """
+
+        if handler.session.state == "bad":
+            data += """
+            <tr>
+             <th>
+             <td>Bad Attempt
+            """
+            code = HTTPStatus.UNAUTHORIZED
+        else:
+            code = HTTPStatus.OK
+
+        data += """
+           </table>
+          </form>
+          </body>
+        """
+
+        data = "".join(data)
+        handler.send_page(code, data)
+
+
+class PagesAuthList(Pages):
+    need_auth = True
+    need_admin = True
+
+    def handle(self, handler):
+        if handler.command == "POST":
+            form = handler.get_formdata()
+            action = form[b"a"][0].decode("utf8")
+
+            action, action_id = action.split("/")
+            action_session = hc.http.WebSite.Session()
+            action_session.id = action_id
+
+            if action == "del":
+                handler.config.auth.end_session(action_session)
+            elif action == "clone":
+                handler.config.auth.replace_data(action_session, self.session)
+
+                # TODO: hardcodes the location of this page
+                handler.send_header("Location", "login")
+                handler.send_error(HTTPStatus.SEE_OTHER)
+                return
+            else:
+                handler.send_error(HTTPStatus.BAD_REQUEST)
+                return
+
+        data = []
+        data += hc.html.Widget.head("Sessions")
+        data += "<body>"
+        data += hc.html.Widget.navbar()
+        data += '<form method="post">'
+
+        data += hc.html.Widget.show_dict(
+            handler.config.auth.sessions,
+            ["del", "clone"],
+        )
+
+        data += """
+           </form>
+          </body>
+         </html>
+        """
+
+        data = "".join(data)
+        handler.send_page(HTTPStatus.OK, data)
+
+
+class PagesKV(Pages):
+    need_auth = True
+
+    def __init__(self, data):
+        self.data = data
+        super().__init__()
+
+    def handle(self, handler):
+        if handler.command == "POST":
+            form = handler.get_formdata()
+            action = form[b"a"][0].decode("utf8")
+
+            if action == "add":
+                try:
+                    k = form[b"key"][0].decode("utf8")
+                    v = form[b"val"][0].decode("utf8")
+                    self.data[k] = v
+                except KeyError:
+                    pass
+            elif action.startswith("del/"):
+                _, action_id = action.split("/")
+                del self.data[action_id]
+            elif action.startswith("edit/"):
+                _, action_id = action.split("/")
+                action_id = urllib.parse.quote(action_id)
+                handler.send_header("Location", f"{handler.path}/{action_id}")
+                handler.send_error(HTTPStatus.SEE_OTHER)
+                return
+            else:
+                handler.send_error(HTTPStatus.BAD_REQUEST)
+                return
+
+        data = []
+        data += hc.html.Widget.head("KV")
+        data += "<body>"
+        data += hc.html.Widget.navbar()
+        data += """
+         <form method="post">
+          <input type="text" name="key" placeholder="key" autofocus>
+          <input type="text" name="val" placeholder="val">
+          <button name="a" value="add">add</button>
+        """
+
+        data += hc.html.Widget.show_dict(
+            self.data,
+            ["edit", "del"],
+        )
+
+        data += """
+           </form>
+          </body>
+         </html>
+        """
+
+        data = "".join(data)
+        handler.send_page(HTTPStatus.OK, data)
+
+
+class PagesKVEdit(Pages):
+    need_auth = True
+
+    def __init__(self, kv):
+        self.kv = kv
+        super().__init__()
+
+    def handle(self, handler):
+        # TODO: hardcodes how deep the subtree is
+        _, path, key = handler.path.split("/")
+
+        key = urllib.parse.unquote(key)
+
+        if handler.command == "POST":
+            form = handler.get_formdata()
+            val = form[b"val"][0].decode("utf8")
+            self.kv[key] = val
+            handler.send_header("Location", f"/{path}")
+            handler.send_error(HTTPStatus.SEE_OTHER)
+            return
+
+        val = self.kv.get(key, "")
+
+        data = []
+        data += hc.html.Widget.head("KV Edit")
+        data += "<body>"
+        data += hc.html.Widget.navbar()
+        data += f"""
+          <form method="post">
+           <input type="text" name="key" readonly value="{key}">
+           <input type="text" name="val" value="{val}" required autofocus>
+           <button name="a" value="add">edit</button>
+          </form>
+         </body>
+        </html>
         """
 
         data = "".join(data)
