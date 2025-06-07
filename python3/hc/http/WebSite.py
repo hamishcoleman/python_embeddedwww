@@ -170,6 +170,7 @@ class PagesStatic(Pages):
 
 class Config:
     def __init__(self):
+        self.Widget = hc.html.Widget.Default
         self.auth = None
         self.routes = {}
         self.routes_subtree = {}
@@ -278,9 +279,9 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
 class PagesMap(Pages):
     def handle(self, handler):
         data = []
-        data += hc.html.Widget.head("Index")
+        data += handler.config.Widget.head("Index")
         data += "<body>"
-        data += hc.html.Widget.navbar()
+        data += handler.config.Widget.navbar()
         data += "<ul>"
 
         for path, page in sorted(handler.config.routes.items()):
@@ -345,9 +346,9 @@ class PagesLogin(Pages):
         self.set_attribs(handler)
 
         data = []
-        data = hc.html.Widget.head("Login")
+        data = handler.config.Widget.head("Login")
         data += "<body>"
-        data += hc.html.Widget.navbar()
+        data += handler.config.Widget.navbar()
         data += """
            <form method="post">
             <table>
@@ -429,12 +430,12 @@ class PagesAuthList(Pages):
                 return
 
         data = []
-        data += hc.html.Widget.head("Sessions")
+        data += handler.config.Widget.head("Sessions")
         data += "<body>"
-        data += hc.html.Widget.navbar()
+        data += handler.config.Widget.navbar()
         data += '<form method="post">'
 
-        data += hc.html.Widget.show_dict(
+        data += handler.config.Widget.show_dict(
             handler.config.auth.sessions,
             ["del", "clone"],
         )
@@ -482,9 +483,9 @@ class PagesKV(Pages):
                 return
 
         data = []
-        data += hc.html.Widget.head("KV")
+        data += handler.config.Widget.head("KV")
         data += "<body>"
-        data += hc.html.Widget.navbar()
+        data += handler.config.Widget.navbar()
         data += """
          <form method="post">
           <input type="text" name="key" placeholder="key" autofocus>
@@ -492,7 +493,7 @@ class PagesKV(Pages):
           <button name="a" value="add">add</button>
         """
 
-        data += hc.html.Widget.show_dict(
+        data += handler.config.Widget.show_dict(
             self.data,
             ["edit", "del"],
         )
@@ -531,9 +532,9 @@ class PagesKVEdit(Pages):
         val = self.kv.get(key, "")
 
         data = []
-        data += hc.html.Widget.head("KV Edit")
+        data += handler.config.Widget.head("KV Edit")
         data += "<body>"
-        data += hc.html.Widget.navbar()
+        data += handler.config.Widget.navbar()
         data += f"""
           <form method="post">
            <input type="text" name="key" readonly value="{key}">

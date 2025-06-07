@@ -26,7 +26,6 @@ sys.path.insert(
 )
 
 
-import hc.html.Widget   # noqa: E402
 import hc.http.WebSite  # noqa: E402
 
 
@@ -140,9 +139,9 @@ class PagesQuery(hc.http.WebSite.Pages):
                 return
 
         data = []
-        data += hc.html.Widget.head("Queries")
+        data += handler.config.Widget.head("Queries")
         data += "<body>"
-        data += hc.html.Widget.navbar()
+        data += handler.config.Widget.navbar()
         data += """
          <form method="post">
           <input type="text" name="q" required autofocus>
@@ -155,7 +154,7 @@ class PagesQuery(hc.http.WebSite.Pages):
              <form method="post">
             """
 
-            data += hc.html.Widget.show_dict(
+            data += handler.config.Widget.show_dict(
                 self.queries,
                 ["allow", "deny", "del", "edit"],
             )
@@ -220,9 +219,9 @@ class PagesChat(hc.http.WebSite.Pages):
             self.chat.append(note)
 
         data = []
-        data += hc.html.Widget.head("Chat")
+        data += handler.config.Widget.head("Chat")
         data += "<body>"
-        data += hc.html.Widget.navbar()
+        data += handler.config.Widget.navbar()
         data += "<table>"
 
         for i in self.chat:
