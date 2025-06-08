@@ -267,6 +267,18 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
 
         return None
 
+    def _checkperms(self):
+        """Check the Page attrs against the request session"""
+        if self.page.need_auth:
+            if not self.session.has_auth:
+                self.send_error(HTTPStatus.UNAUTHORIZED)
+                return False
+        if self.page.need_admin:
+            if not self.session.has_admin:
+                self.send_error(HTTPStatus.UNAUTHORIZED)
+                return False
+        return True
+
     def _route2render(self):
         """Handle the page all the way to rendering output"""
         self.page = self._route2page_obj()
@@ -279,14 +291,8 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
 
         # TODO: could add page.need_session and avoid getting session
         self.session = self.config.auth.request2session(self)
-        if self.page.need_auth:
-            if not self.session.has_auth:
-                self.send_error(HTTPStatus.UNAUTHORIZED)
-                return
-        if self.page.need_admin:
-            if not self.session.has_admin:
-                self.send_error(HTTPStatus.UNAUTHORIZED)
-                return
+        if not self._checkperms():
+            return
 
         self.page.handle(self)
 
