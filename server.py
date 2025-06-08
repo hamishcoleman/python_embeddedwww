@@ -140,31 +140,31 @@ class PagesQuery(hc.http.WebSite.Pages):
     def do_GET(self, handler):
         data = []
         data += handler.config.Widget.head("Queries")
-        data += "<body>"
+        data += ["<body>"]
         data += handler.config.Widget.navbar()
-        data += """
+        data += ["""
          <form method="post">
           <input type="text" name="q" required autofocus>
           <button name="qq" value="query">query</button>
          </form>
-        """
+        """]
 
         if handler.session.has_auth:
-            data += """
+            data += ["""
              <form method="post">
-            """
+            """]
 
             data += handler.config.Widget.show_dict(
                 self.queries,
                 ["allow", "deny", "del", "edit"],
             )
 
-            data += "</form>"
+            data += ["</form>"]
 
-        data += """
+        data += ["""
           </body>
          </html>
-        """
+        """]
 
         data = "".join(data)
         handler.send_page(HTTPStatus.OK, data)
@@ -223,16 +223,16 @@ class PagesChat(hc.http.WebSite.Pages):
     def do_GET(self, handler):
         data = []
         data += handler.config.Widget.head("Chat")
-        data += "<body>"
+        data += ["<body>"]
         data += handler.config.Widget.navbar()
-        data += "<table>"
+        data += ["<table>"]
 
         for i in self.chat:
-            data += f"""
+            data += [f"""
              <tr><td>{i}
-            """
+            """]
 
-        data += """
+        data += ["""
          <tr>
           <td>
            <form method="post">
@@ -240,7 +240,7 @@ class PagesChat(hc.http.WebSite.Pages):
             <input type="submit" value="Submit">
            </form>
          </table>
-        """
+        """]
 
         data = "".join(data)
         handler.send_page(HTTPStatus.OK, data)

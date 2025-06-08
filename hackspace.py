@@ -46,7 +46,7 @@ class Widget(hc.html.Widget.Default):
     @classmethod
     def head(cls, title):
         r = []
-        r += f"""<!DOCTYPE html>
+        r += [f"""<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8">
@@ -54,15 +54,15 @@ class Widget(hc.html.Widget.Default):
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{title}</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-"""
+"""]
         r += cls.style()
-        r += "</head>"
+        r += ["</head>"]
         return r
 
     @classmethod
     def navbar(cls, username=None):
         r = []
-        r += """
+        r += ["""
     <header>
       <table width=100%>
         <tr>
@@ -72,15 +72,15 @@ class Widget(hc.html.Widget.Default):
               Dim Sum Labs
             </a>
           <td align=right valign=bottom>
-"""
+"""]
         if username:
-            r += f"Logged in as {username}, "
-            r += '<a href="/logout/" style="color:white;">Logout</a>'
+            r += [f"Logged in as {username}, "]
+            r += ['<a href="/logout/" style="color:white;">Logout</a>']
 
-        r += """
+        r += ["""
       </table>
     </header>
-"""
+"""]
         return r
 
 
@@ -111,9 +111,9 @@ class PagesAccount(hc.http.WebSite.Pages):
     def do_GET(self, handler):
         data = []
         data += handler.config.Widget.head("DSL Door")
-        data += "<body>\n"
+        data += ["<body>\n"]
         data += handler.config.Widget.navbar(handler.session.user)
-        data += """
+        data += ["""
     <main>
 
 
@@ -184,7 +184,7 @@ class PagesAccount(hc.http.WebSite.Pages):
   </ul>
 
     </main>
-"""
+"""]
 
         data = "".join(data)
         handler.send_page(HTTPStatus.OK, data)
@@ -199,9 +199,9 @@ class PagesRoot(hc.http.WebSite.Pages):
 
         data = []
         data += handler.config.Widget.head("DSL Door")
-        data += "<body>\n"
+        data += ["<body>\n"]
         data += handler.config.Widget.navbar(handler.session.user)
-        data += """
+        data += ["""
     <main>
 
 
@@ -228,7 +228,7 @@ class PagesRoot(hc.http.WebSite.Pages):
 
 
     </main>
-"""
+"""]
 
         data = "".join(data)
         handler.send_page(HTTPStatus.OK, data)

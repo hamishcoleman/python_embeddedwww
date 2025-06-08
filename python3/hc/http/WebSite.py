@@ -168,17 +168,17 @@ class Pages:
 
 class PagesMetrics(Pages):
     def do_GET(self, handler):
-        data = []
+        d = []
         for route, page in handler.config.routes.items():
-            data += f'site_request_count{{route="{route}"}} {page.request}\n'
-            data += f'site_request_seconds{{route="{route}"}} {page.elapsed}\n'
+            d += [f'site_request_count{{route="{route}"}} {page.request}\n']
+            d += [f'site_request_seconds{{route="{route}"}} {page.elapsed}\n']
 
         for route, page in handler.config.routes_subtree.items():
-            data += f'site_request_count{{route="{route}"}} {page.request}\n'
-            data += f'site_request_seconds{{route="{route}"}} {page.elapsed}\n'
+            d += [f'site_request_count{{route="{route}"}} {page.request}\n']
+            d += [f'site_request_seconds{{route="{route}"}} {page.elapsed}\n']
 
-        data = "".join(data)
-        handler.send_page(HTTPStatus.OK, data, content_type="text/plain")
+        d = "".join(d)
+        handler.send_page(HTTPStatus.OK, d, content_type="text/plain")
 
 
 class PagesStatic(Pages):
@@ -326,24 +326,24 @@ class PagesMap(Pages):
     def do_GET(self, handler):
         data = []
         data += handler.config.Widget.head("Index")
-        data += "<body>"
+        data += ["<body>"]
         data += handler.config.Widget.navbar()
-        data += "<ul>"
+        data += ["<ul>"]
 
         for path, page in sorted(handler.config.routes.items()):
             if page.need_auth and not handler.session.has_auth:
                 continue
             if page.need_admin and not handler.session.has_admin:
                 continue
-            data += f"""
+            data += [f"""
              <li><a href="{path}">{path}</a>
-            """
+            """]
 
-        data += """
+        data += ["""
          </ul>
          </body>
          </html>
-        """
+        """]
 
         data = "".join(data)
         handler.send_page(HTTPStatus.OK, data)
@@ -396,31 +396,31 @@ class PagesLogin(Pages):
 
         data = []
         data = handler.config.Widget.head("Login")
-        data += "<body>"
+        data += ["<body>"]
         data += handler.config.Widget.navbar()
-        data += """
+        data += ["""
            <form method="post">
             <table>
-        """
+        """]
 
         for k, v in self.attribs.items():
             if v is None:
                 continue
-            data += f"""
+            data += [f"""
               <tr>
                <th align=right>{k}:
                <td>{v}
-            """
+            """]
 
         if handler.session.has_auth:
-            data += """
+            data += ["""
             <tr>
             <tr>
              <th>
              <td align=right><button name="a" value="logout">Logout</button>
-            """
+            """]
         else:
-            data += """
+            data += ["""
             <tr>
              <th align=right><label for="user">Username:</label>
              <td><input type="text" id="user" name="user" required autofocus>
@@ -430,23 +430,23 @@ class PagesLogin(Pages):
             <tr>
              <th>
              <td align=right><button name="a" value="login">Login</button>
-            """
+            """]
 
         if handler.session.state == "bad":
-            data += """
+            data += ["""
             <tr>
              <th>
              <td>Bad Attempt
-            """
+            """]
             code = HTTPStatus.UNAUTHORIZED
         else:
             code = HTTPStatus.OK
 
-        data += """
+        data += ["""
            </table>
           </form>
           </body>
-        """
+        """]
 
         data = "".join(data)
         handler.send_page(code, data)
@@ -483,20 +483,20 @@ class PagesAuthList(Pages):
     def do_GET(self, handler):
         data = []
         data += handler.config.Widget.head("Sessions")
-        data += "<body>"
+        data += ["<body>"]
         data += handler.config.Widget.navbar()
-        data += '<form method="post">'
+        data += ['<form method="post">']
 
         data += handler.config.Widget.show_dict(
             handler.config.auth.sessions,
             ["del", "clone"],
         )
 
-        data += """
+        data += ["""
            </form>
           </body>
          </html>
-        """
+        """]
 
         data = "".join(data)
         handler.send_page(HTTPStatus.OK, data)
@@ -539,25 +539,25 @@ class PagesKV(Pages):
     def do_GET(self, handler):
         data = []
         data += handler.config.Widget.head("KV")
-        data += "<body>"
+        data += ["<body>"]
         data += handler.config.Widget.navbar()
-        data += """
+        data += ["""
          <form method="post">
           <input type="text" name="key" placeholder="key" autofocus>
           <input type="text" name="val" placeholder="val">
           <button name="a" value="add">add</button>
-        """
+        """]
 
         data += handler.config.Widget.show_dict(
             self.data,
             ["edit", "del"],
         )
 
-        data += """
+        data += ["""
            </form>
           </body>
          </html>
-        """
+        """]
 
         data = "".join(data)
         handler.send_page(HTTPStatus.OK, data)
@@ -592,9 +592,9 @@ class PagesKVEdit(Pages):
 
         data = []
         data += handler.config.Widget.head("KV Edit")
-        data += "<body>"
+        data += ["<body>"]
         data += handler.config.Widget.navbar()
-        data += f"""
+        data += [f"""
           <form method="post">
            <input type="text" name="key" readonly value="{key}">
            <input type="text" name="val" value="{val}" required autofocus>
@@ -602,7 +602,7 @@ class PagesKVEdit(Pages):
           </form>
          </body>
         </html>
-        """
+        """]
 
         data = "".join(data)
         handler.send_page(HTTPStatus.OK, data)
