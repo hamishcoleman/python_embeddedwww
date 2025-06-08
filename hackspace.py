@@ -60,7 +60,7 @@ class Widget(hc.html.Widget.Default):
         return r
 
     @classmethod
-    def navbar(cls):
+    def navbar(cls, username=None):
         r = []
         r += """
     <header>
@@ -71,17 +71,16 @@ class Widget(hc.html.Widget.Default):
               <img src="/static/dsl_logo.svg" width="30px" />
               Dim Sum Labs
             </a>
-            <a href="/sitemap">sitemap</a>
           <td align=right valign=bottom>
 """
-        # TODO:
-        # Logged in as {session.user}, <a href="/logout/"
-        # style="color:white;">Logout</a>
+        if username:
+            r += f"Logged in as {username}, "
+            r += '<a href="/logout/" style="color:white;">Logout</a>'
+
         r += """
       </table>
     </header>
 """
-        # TODO: the above hardcodes the location of the sitemap
         return r
 
 
@@ -103,7 +102,7 @@ class PagesAccount(hc.http.WebSite.Pages):
         data = []
         data += handler.config.Widget.head("DSL Door")
         data += "<body>\n"
-        data += handler.config.Widget.navbar()
+        data += handler.config.Widget.navbar(handler.session.user)
         data += """
     <main>
 
@@ -191,7 +190,7 @@ class PagesRoot(hc.http.WebSite.Pages):
         data = []
         data += handler.config.Widget.head("DSL Door")
         data += "<body>\n"
-        data += handler.config.Widget.navbar()
+        data += handler.config.Widget.navbar(handler.session.user)
         data += """
     <main>
 
