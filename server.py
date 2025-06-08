@@ -85,59 +85,59 @@ class PagesQuery(hc.http.WebSite.Pages):
         self.queries = data
         super().__init__()
 
-    def handle(self, handler):
-        if handler.command == "POST":
-            form = handler.get_formdata()
+    def do_POST(self, handler):
+        form = handler.get_formdata()
 
-            if b"q" in form:
-                query = form[b"q"][0].decode("utf8")
+        if b"q" in form:
+            query = form[b"q"][0].decode("utf8")
 
-                # FIXME: better id
-                _id = hc.http.WebSite._encoded_uuid()
-                describe = _tuple2desc(
-                    handler.server.server_address,
-                    handler.client_address,
-                )
-                self.queries[_id] = {
-                    "a": None,
-                    "h": handler.headers["Host"],
-                    "q": query,
-                    "t": handler.time_start,
-                    "desc": describe,
-                }
-                handler.send_header("Location", f"{handler.path}/{_id}")
-                handler.send_page(HTTPStatus.CREATED, str(_id))
+            # FIXME: better id
+            _id = hc.http.WebSite._encoded_uuid()
+            describe = _tuple2desc(
+                handler.server.server_address,
+                handler.client_address,
+            )
+            self.queries[_id] = {
+                "a": None,
+                "h": handler.headers["Host"],
+                "q": query,
+                "t": handler.time_start,
+                "desc": describe,
+            }
+            handler.send_header("Location", f"{handler.path}/{_id}")
+            handler.send_page(HTTPStatus.CREATED, str(_id))
+            return
+
+        if b"a" in form:
+            if not handler.session.has_auth:
+                handler.send_error(HTTPStatus.UNAUTHORIZED)
                 return
 
-            if b"a" in form:
-                if not handler.session.has_auth:
-                    handler.send_error(HTTPStatus.UNAUTHORIZED)
-                    return
+            action = form[b"a"][0].decode("utf8")
+            cmd, action_id = action.split("/")
 
-                action = form[b"a"][0].decode("utf8")
-                cmd, action_id = action.split("/")
-
-                if cmd == "del":
-                    del self.queries[action_id]
-                elif cmd == "allow":
-                    self.queries[action_id]["a"] = True
-                elif cmd == "deny":
-                    self.queries[action_id]["a"] = False
-                elif cmd == "edit":
-                    q_safe = urllib.parse.quote(self.queries[action_id]["q"])
-                    handler.send_header("Location", f"/kv/{q_safe}")
-                    # TODO: hardcodes the location of kv
-                    handler.send_error(HTTPStatus.SEE_OTHER)
-                    return
-                else:
-                    handler.send_error(HTTPStatus.BAD_REQUEST)
-                    return
-
-                # Make refreshing nicer
-                handler.send_header("Location", handler.path)
+            if cmd == "del":
+                del self.queries[action_id]
+            elif cmd == "allow":
+                self.queries[action_id]["a"] = True
+            elif cmd == "deny":
+                self.queries[action_id]["a"] = False
+            elif cmd == "edit":
+                q_safe = urllib.parse.quote(self.queries[action_id]["q"])
+                handler.send_header("Location", f"/kv/{q_safe}")
+                # TODO: hardcodes the location of kv
                 handler.send_error(HTTPStatus.SEE_OTHER)
                 return
+            else:
+                handler.send_error(HTTPStatus.BAD_REQUEST)
+                return
 
+            # Make refreshing nicer
+            handler.send_header("Location", handler.path)
+            handler.send_error(HTTPStatus.SEE_OTHER)
+            return
+
+    def do_GET(self, handler):
         data = []
         data += handler.config.Widget.head("Queries")
         data += "<body>"
@@ -176,7 +176,7 @@ class PagesQueryAnswer(hc.http.WebSite.Pages):
         self.kv = kv
         super().__init__()
 
-    def handle(self, handler):
+    def do_GET(self, handler):
         # TODO: hardcodes how deep the subtree is
         _, q, _id = handler.path.split("/")
 
@@ -211,13 +211,16 @@ class PagesChat(hc.http.WebSite.Pages):
         self.chat = chat_data
         super().__init__()
 
-    def handle(self, handler):
-        if handler.command == "POST":
-            form = handler.get_formdata()
-            chat = form[b"chat"][0].decode("utf8")
-            note = handler.session.user + ":" + chat
-            self.chat.append(note)
+    def do_POST(self, handler):
+        form = handler.get_formdata()
+        chat = form[b"chat"][0].decode("utf8")
+        note = handler.session.user + ":" + chat
+        self.chat.append(note)
 
+        # TODO: refactor to never chain
+        return self.do_GET(handler)
+
+    def do_GET(self, handler):
         data = []
         data += handler.config.Widget.head("Chat")
         data += "<body>"

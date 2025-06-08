@@ -167,7 +167,7 @@ class Pages:
 
 
 class PagesMetrics(Pages):
-    def handle(self, handler):
+    def do_GET(self, handler):
         data = []
         for route, page in handler.config.routes.items():
             data += f'site_request_count{{route="{route}"}} {page.request}\n'
@@ -187,7 +187,7 @@ class PagesStatic(Pages):
         self.content_type = content_type
         super().__init__()
 
-    def handle(self, handler):
+    def do_GET(self, handler):
         handler.send_page(
             HTTPStatus.OK,
             self.body,
@@ -294,7 +294,12 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
         if not self._checkperms():
             return
 
-        self.page.handle(self)
+        page_method_name = 'do_' + self.command
+        if not hasattr(self.page, page_method_name):
+            self.send_error(HTTPStatus.NOT_IMPLEMENTED)
+            return
+        page_handler = getattr(self.page, page_method_name)
+        page_handler(self)
 
     def render_page(self):
         self._route2render()
@@ -318,7 +323,7 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
 
 
 class PagesMap(Pages):
-    def handle(self, handler):
+    def do_GET(self, handler):
         data = []
         data += handler.config.Widget.head("Index")
         data += "<body>"
@@ -359,31 +364,34 @@ class PagesLogin(Pages):
         self.attribs["Host"] = handler.headers["Host"]
         self.attribs["Username"] = handler.session.user
 
-    def handle(self, handler):
-        if handler.command == "POST":
-            form = handler.get_formdata()
-            action = form[b"a"][0].decode("utf8")
+    def do_POST(self, handler):
+        form = handler.get_formdata()
+        action = form[b"a"][0].decode("utf8")
 
-            if action == "login":
-                user = form[b"user"][0].decode("utf8")
-                password = form[b"pass"][0].decode("utf8")
-                handler.session = handler.config.auth.login2session(
-                    handler,
-                    user,
-                    password
-                )
+        if action == "login":
+            user = form[b"user"][0].decode("utf8")
+            password = form[b"pass"][0].decode("utf8")
+            handler.session = handler.config.auth.login2session(
+                handler,
+                user,
+                password
+            )
 
-                if handler.session.has_auth:
-                    # Make reloading nicer
-                    handler.send_header("Location", handler.path)
-                    handler.send_error(HTTPStatus.SEE_OTHER)
-                    return
-            else:
-                try:
-                    handler.config.auth.end_session(handler.session)
-                except KeyError:
-                    handler.session.state = "bad"
+            if handler.session.has_auth:
+                # Make reloading nicer
+                handler.send_header("Location", handler.path)
+                handler.send_error(HTTPStatus.SEE_OTHER)
+                return
+        else:
+            try:
+                handler.config.auth.end_session(handler.session)
+            except KeyError:
+                handler.session.state = "bad"
 
+        # TODO: refactor to never chain
+        return self.do_GET(handler)
+
+    def do_GET(self, handler):
         self.set_attribs(handler)
 
         data = []
@@ -448,28 +456,31 @@ class PagesAuthList(Pages):
     need_auth = True
     need_admin = True
 
-    def handle(self, handler):
-        if handler.command == "POST":
-            form = handler.get_formdata()
-            action = form[b"a"][0].decode("utf8")
+    def do_POST(self, handler):
+        form = handler.get_formdata()
+        action = form[b"a"][0].decode("utf8")
 
-            action, action_id = action.split("/")
-            action_session = hc.http.WebSite.Session()
-            action_session.id = action_id
+        action, action_id = action.split("/")
+        action_session = hc.http.WebSite.Session()
+        action_session.id = action_id
 
-            if action == "del":
-                handler.config.auth.end_session(action_session)
-            elif action == "clone":
-                handler.config.auth.replace_data(action_session, self.session)
+        if action == "del":
+            handler.config.auth.end_session(action_session)
+        elif action == "clone":
+            handler.config.auth.replace_data(action_session, self.session)
 
-                # TODO: hardcodes the location of this page
-                handler.send_header("Location", "login")
-                handler.send_error(HTTPStatus.SEE_OTHER)
-                return
-            else:
-                handler.send_error(HTTPStatus.BAD_REQUEST)
-                return
+            # TODO: hardcodes the location of this page
+            handler.send_header("Location", "login")
+            handler.send_error(HTTPStatus.SEE_OTHER)
+            return
+        else:
+            handler.send_error(HTTPStatus.BAD_REQUEST)
+            return
 
+        # TODO: refactor to never chain
+        return self.do_GET(handler)
+
+    def do_GET(self, handler):
         data = []
         data += handler.config.Widget.head("Sessions")
         data += "<body>"
@@ -498,31 +509,34 @@ class PagesKV(Pages):
         self.data = data
         super().__init__()
 
-    def handle(self, handler):
-        if handler.command == "POST":
-            form = handler.get_formdata()
-            action = form[b"a"][0].decode("utf8")
+    def do_POST(self, handler):
+        form = handler.get_formdata()
+        action = form[b"a"][0].decode("utf8")
 
-            if action == "add":
-                try:
-                    k = form[b"key"][0].decode("utf8")
-                    v = form[b"val"][0].decode("utf8")
-                    self.data[k] = v
-                except KeyError:
-                    pass
-            elif action.startswith("del/"):
-                _, action_id = action.split("/")
-                del self.data[action_id]
-            elif action.startswith("edit/"):
-                _, action_id = action.split("/")
-                action_id = urllib.parse.quote(action_id)
-                handler.send_header("Location", f"{handler.path}/{action_id}")
-                handler.send_error(HTTPStatus.SEE_OTHER)
-                return
-            else:
-                handler.send_error(HTTPStatus.BAD_REQUEST)
-                return
+        if action == "add":
+            try:
+                k = form[b"key"][0].decode("utf8")
+                v = form[b"val"][0].decode("utf8")
+                self.data[k] = v
+            except KeyError:
+                pass
+        elif action.startswith("del/"):
+            _, action_id = action.split("/")
+            del self.data[action_id]
+        elif action.startswith("edit/"):
+            _, action_id = action.split("/")
+            action_id = urllib.parse.quote(action_id)
+            handler.send_header("Location", f"{handler.path}/{action_id}")
+            handler.send_error(HTTPStatus.SEE_OTHER)
+            return
+        else:
+            handler.send_error(HTTPStatus.BAD_REQUEST)
+            return
 
+        # TODO: refactor to never chain
+        return self.do_GET(handler)
+
+    def do_GET(self, handler):
         data = []
         data += handler.config.Widget.head("KV")
         data += "<body>"
@@ -556,20 +570,24 @@ class PagesKVEdit(Pages):
         self.kv = kv
         super().__init__()
 
-    def handle(self, handler):
+    def do_POST(self, handler):
         # TODO: hardcodes how deep the subtree is
         _, path, key = handler.path.split("/")
 
         key = urllib.parse.unquote(key)
 
-        if handler.command == "POST":
-            form = handler.get_formdata()
-            val = form[b"val"][0].decode("utf8")
-            self.kv[key] = val
-            handler.send_header("Location", f"/{path}")
-            handler.send_error(HTTPStatus.SEE_OTHER)
-            return
+        form = handler.get_formdata()
+        val = form[b"val"][0].decode("utf8")
+        self.kv[key] = val
+        handler.send_header("Location", f"/{path}")
+        handler.send_error(HTTPStatus.SEE_OTHER)
+        return
 
+    def do_GET(self, handler):
+        # TODO: hardcodes how deep the subtree is
+        _, path, key = handler.path.split("/")
+
+        key = urllib.parse.unquote(key)
         val = self.kv.get(key, "")
 
         data = []

@@ -99,7 +99,7 @@ class RequestHandler(hc.http.WebSite.RequestHandler):
 class PagesAccount(hc.http.WebSite.Pages):
     need_auth = True
 
-    def handle(self, handler):
+    def do_GET(self, handler):
         data = []
         data += handler.config.Widget.head("DSL Door")
         data += "<body>\n"
@@ -182,7 +182,7 @@ class PagesAccount(hc.http.WebSite.Pages):
 
 
 class PagesRoot(hc.http.WebSite.Pages):
-    def handle(self, handler):
+    def do_GET(self, handler):
         if not handler.session.has_auth:
             handler.send_header("Location", "/login")
             # TODO: hardcodes the location of login
