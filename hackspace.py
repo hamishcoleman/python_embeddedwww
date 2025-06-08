@@ -109,6 +109,17 @@ class PagesAccount(hc.http.WebSite.Pages):
     need_auth = True
 
     def do_GET(self, handler):
+
+        # TODO:
+        # fetch these details from the database
+        months_next = [
+            "2025-05",
+            "2025-06",
+            "2025-07",
+        ]
+        user_paid_until = "2020-11"
+        rfid_id_last_seen = "766"
+
         data = []
         data += handler.config.Widget.head("DSL Door")
         data += ["<body>\n"]
@@ -129,12 +140,11 @@ class PagesAccount(hc.http.WebSite.Pages):
       <label for="id_year_month">Inform the door of a payment:</label>
 
     <select name="year_month" id="id_year_month">
-  <option value="2025-05">2025-05</option>
+"""]
+        for month in months_next:
+            data += [f'<option value="{month}">{month}</option>\n']
 
-  <option value="2025-06">2025-06</option>
-
-  <option value="2025-07">2025-07</option>
-
+        data += [f"""
 </select>
 
 </div>
@@ -142,13 +152,9 @@ class PagesAccount(hc.http.WebSite.Pages):
         </form>
       </p>
     </li>
-"""
 
-        data += """
-    <p>The door's database says your dues are paid until 2020-11
-"""
+    <p>The door's database says your dues are paid until {user_paid_until}
 
-        data += """
     <hr />
 
     <li>
@@ -158,7 +164,12 @@ class PagesAccount(hc.http.WebSite.Pages):
 
       <label for="id_card_id">Pair by card ID (defaults to last seen):</label>
 
-    <input type="text" name="card_id" value="766" required id="id_card_id">
+    <input
+      type="text"
+      name="card_id"
+      value="{rfid_id_last_seen}"
+      required id="id_card_id"
+    >
 
 </div>
         <input type="submit" value="Pair">
@@ -190,6 +201,120 @@ class PagesAccount(hc.http.WebSite.Pages):
         handler.send_page(HTTPStatus.OK, data)
 
 
+class PagesPayment(hc.http.WebSite.Pages):
+    need_auth = True
+
+    def do_POST(self, handler):
+        form = handler.get_formdata()
+        year_month = form[b"year_month"][0].decode("utf8")
+
+        # TODO:
+        # actually update database with year_month
+        user_paid_until = year_month
+        valid_form = True
+
+        data = []
+        data += handler.config.Widget.head("DSL Door")
+        data += ["<body>\n"]
+        data += handler.config.Widget.navbar(handler.session.user)
+        data += ["""
+    <main>
+<h2>Payment Claim Recorded</h2>
+
+"""]
+        if valid_form:
+            data += [f"""
+  <p>The door's database now says your dues are paid until { user_paid_until }
+"""]
+
+        data += ["""
+<p>INSERT PAPER INSTRUCTIONS HERE
+"""]
+
+        data = "".join(data)
+        handler.send_page(HTTPStatus.OK, data)
+
+
+class PagesPair(hc.http.WebSite.Pages):
+    need_auth = True
+
+    def do_POST(self, handler):
+        form = handler.get_formdata()
+        card_id = form[b"card_id"][0].decode("utf8")
+
+        # TODO:
+        # actually update database with year_month
+        user_card_id = card_id
+        rfid_id_in_use = False
+
+        if rfid_id_in_use:
+            handler.send_page(HTTPStatus.BAD_REQUEST, "Card already paired")
+            return
+
+        data = []
+        data += handler.config.Widget.head("DSL Door")
+        data += ["<body>\n"]
+        data += handler.config.Widget.navbar(handler.session.user)
+
+        data += [f"""
+<h2>Paired card! ({user_card_id})</h2>
+"""]
+
+        # TODO:
+        # original site posted the "paired" message to a queue that got shown
+        # on many pages, then redirected to /account_actions/
+
+        data = "".join(data)
+        handler.send_page(HTTPStatus.OK, data)
+
+
+class PagesDoor(hc.http.WebSite.Pages):
+    need_auth = True
+
+    def do_POST(self, handler):
+        # TODO:
+        # fetch these details from the database
+        user_has_paid = (handler.session.user == "admin")
+
+        if user_has_paid:
+            # TODO:
+            # Send message to door GPIO
+            handler.send_page(HTTPStatus.OK, "Opened door!")
+            return
+
+        data = []
+        data += handler.config.Widget.head("DSL Door")
+        data += ["<body>\n"]
+        data += handler.config.Widget.navbar(handler.session.user)
+        data += ["""
+<h1>Door Not Opened!</h1>
+
+<hr />
+There could be several reasons for this:
+<ul>
+  <li>You have not paid
+  <li>You have paid, but the internet is down
+  <li>Payments batch processing might be late
+</ul>
+
+If you have paid, please use the
+<a href="/account_actions/">Account actions</a>
+page to inform the door of your payment.
+
+<p>
+If you continue to have trouble with the door, please email us and we will
+fix it promptly.
+
+<hr />
+<a href="javascript:window.history.back()">Back</a>
+
+
+"""]
+
+        data = "".join(data)
+        handler.send_page(HTTPStatus.FORBIDDEN, data)
+
+
 class PagesRoot(hc.http.WebSite.Pages):
     def do_GET(self, handler):
         if not handler.session.has_auth:
@@ -208,7 +333,7 @@ class PagesRoot(hc.http.WebSite.Pages):
   <h2>Space actions</h2>
   <ul class="action-list">
     <li>
-      <form action="/door_open/" method="GET">
+      <form action="/door_open/" method="POST">
         <input
           type="submit"
           name="open"
@@ -366,10 +491,10 @@ ul.messages > li {
         "/login": hc.http.WebSite.PagesLogin(),
         "/logout/": PagesLogout(),
         "/account_actions/": PagesAccount(),
-        # /payment_submit/
-        # /rfid_pair/
+        "/door_open/": PagesDoor(),
+        "/payment_submit/": PagesPayment(),
+        "/rfid_pair/": PagesPair(),
         # /password_change/
-        # /door_open/
 
         "/style.css": hc.http.WebSite.PagesStatic(
             style,
