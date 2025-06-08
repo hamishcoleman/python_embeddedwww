@@ -95,6 +95,16 @@ class RequestHandler(hc.http.WebSite.RequestHandler):
         self.render_page()
 
 
+class PagesLogout(hc.http.WebSite.Pages):
+    need_auth = True
+
+    def do_GET(self, handler):
+        handler.config.auth.end_session(handler.session)
+        handler.send_header("Location", "/login")
+        # TODO: hardcodes the location of login
+        handler.send_error(HTTPStatus.SEE_OTHER)
+
+
 class PagesAccount(hc.http.WebSite.Pages):
     need_auth = True
 
@@ -354,6 +364,7 @@ ul.messages > li {
     config.routes = {
         "/": PagesRoot(),
         "/login": hc.http.WebSite.PagesLogin(),
+        "/logout/": PagesLogout(),
         "/account_actions/": PagesAccount(),
         # /payment_submit/
         # /rfid_pair/
