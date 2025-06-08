@@ -267,15 +267,13 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
 
         return None
 
-    def _checkperms(self):
+    def _checkperms(self, page):
         """Check the Page attrs against the request session"""
-        if self.page.need_auth:
+        if page.need_auth:
             if not self.session.has_auth:
-                self.send_error(HTTPStatus.UNAUTHORIZED)
                 return False
-        if self.page.need_admin:
+        if page.need_admin:
             if not self.session.has_admin:
-                self.send_error(HTTPStatus.UNAUTHORIZED)
                 return False
         return True
 
@@ -291,7 +289,8 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
 
         # TODO: could add page.need_session and avoid getting session
         self.session = self.config.auth.request2session(self)
-        if not self._checkperms():
+        if not self._checkperms(self.page):
+            self.send_error(HTTPStatus.UNAUTHORIZED)
             return
 
         page_method_name = 'do_' + self.command
@@ -331,9 +330,7 @@ class PagesMap(Pages):
         data += ["<ul>"]
 
         for path, page in sorted(handler.config.routes.items()):
-            if page.need_auth and not handler.session.has_auth:
-                continue
-            if page.need_admin and not handler.session.has_admin:
+            if not handler._checkperms(page):
                 continue
             data += [f"""
              <li><a href="{path}">{path}</a>
