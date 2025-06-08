@@ -200,9 +200,9 @@ class Config:
     Provide site configuration.  Each instance of RequestHandler will be
     passed this config, so it could be used for Website-Wide configuration.
 
-    Normally it is expected that the object instances in the routes dicts
-    will have been created with any persistant state information for the
-    operation of the site and this is config for the infrastructure.
+    Normally it is expected that the object instances in the routes dicts will
+    have been created with access to any persistant state information for the
+    operation of the site and the Config object is for the infrastructure.
     """
     def __init__(self):
         self.Widget = hc.html.Widget.Default
