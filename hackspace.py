@@ -224,7 +224,7 @@ class PagesPayment(hc.http.WebSite.Pages):
 """]
         if valid_form:
             data += [f"""
-  <p>The door's database now says your dues are paid until { user_paid_until }
+  <p>The door's database now says your dues are paid until {user_paid_until}
 """]
 
         data += ["""

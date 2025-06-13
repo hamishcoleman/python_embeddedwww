@@ -7,9 +7,7 @@ import functools
 import os
 import signal
 import socketserver
-import subprocess
 import sys
-import urllib.parse
 
 from http import HTTPStatus
 
@@ -87,7 +85,7 @@ class PagesPhoneHome(hc.http.WebSite.Pages):
 
         key = item["instance_id"]
         self.data[key] = item
-        
+
         handler.send_page(HTTPStatus.OK, "Recorded")
 
     def do_GET(self, handler):
