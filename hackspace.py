@@ -485,7 +485,7 @@ ul.messages > li {
 
     config = hc.http.WebSite.Config()
     config.Widget = Widget
-    config.auth = hc.http.WebSite.Authenticator()
+    config.auth = hc.http.WebSite.AuthenticatorTest()
     config.routes = {
         "/": PagesRoot(),
         "/login": hc.http.WebSite.PagesLogin(),

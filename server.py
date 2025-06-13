@@ -328,7 +328,7 @@ def main():
 
     config = SimpleSiteConfig()
     config.cookie_domain = args.cookie_domain
-    config.auth = hc.http.WebSite.Authenticator()
+    config.auth = hc.http.WebSite.AuthenticatorTest()
     config.routes = {
         "/auth/login": PagesLogin(),
         "/auth/list": hc.http.WebSite.PagesAuthList(),

@@ -72,7 +72,7 @@ class Session:
         )
 
 
-class Authenticator:
+class AuthenticatorBase:
     """
     The Authenticator object is used on all requests and logins to validate
     all the details.
@@ -82,6 +82,47 @@ class Authenticator:
     It is expected that things like persisting session state into cookies or
     authenticating with JWT can be implemented by subclassing this class.
     """
+
+    def end_session(self, session):
+        """
+        This is called to invalidate a session ID.  Effectively serving as a
+        logout.  It is expected to flag the session ID as invalid - requiring
+        credentials to be presented to start using again.  It should flush any
+        session settings changes or caches.
+        """
+        raise NotImpementedError
+
+    def replace_data(self, src, dst):
+        """
+        Copy the session information out of one session ID into another.
+        Since session data is intended to be readonly, a helper is needed
+        to provide any required deepcopy or object recreation.
+
+        This is expected to be used to allow an Admin to "clone" somebody
+        else's existing session - for debugging or support.
+        It is an experimental idea and should be used carefully.
+        """
+        raise NotImpementedError
+
+    def request2session(self, request):
+        """
+        Given a RequestHandler object, extract information from the request
+        and return a Session object describing this session.
+        Only previously authenticated and active sessions should be returned.
+        """
+        raise NotImpementedError
+
+    def login2session(self, response, user, password):
+        """
+        Given some authentication information (currently username and password)
+        - perform checks to confirm their validity
+        - Update the response object with any needed data (expected to be used
+          to set a cookie)
+        """
+        raise NotImpementedError
+
+
+class AuthenticatorTest(AuthenticatorBase):
     def __init__(self):
         self.sessions = {}
         # TODO: param to load auth table
@@ -132,6 +173,8 @@ class Authenticator:
     def request2session(self, request):
         session = Session.from_request(request)
         if session.id and session.data is None:
+            # The session could be created - but not populated - from the
+            # request, so we try to populate it
             try:
                 session.data = self.sessions[session.id]
                 session.state = "login"
@@ -152,8 +195,6 @@ class Authenticator:
         self.sessions[session.id] = session.data
 
         session.to_response(response)
-
-        return session
 
 
 class Pages:
@@ -368,7 +409,7 @@ class PagesLogin(Pages):
         if action == "login":
             user = form[b"user"][0].decode("utf8")
             password = form[b"pass"][0].decode("utf8")
-            handler.session = handler.config.auth.login2session(
+            handler.config.auth.login2session(
                 handler,
                 user,
                 password

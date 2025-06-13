@@ -151,7 +151,7 @@ def main():
     """
 
     config = hc.http.WebSite.Config()
-    config.auth = hc.http.WebSite.Authenticator()
+    config.auth = hc.http.WebSite.AuthenticatorTest()
     config.routes = {
         "/auth/login": hc.http.WebSite.PagesLogin(),
         "/auth/list": hc.http.WebSite.PagesAuthList(),
