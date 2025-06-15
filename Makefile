@@ -12,7 +12,7 @@ build-dep:
             flake8 \
             python3-pytest \
             python3-pytest-cov \
-	    shellcheck \
+            shellcheck \
 
 install:
 	mkdir -p $(INSTALLDIR)
