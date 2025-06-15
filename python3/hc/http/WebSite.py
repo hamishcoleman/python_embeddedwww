@@ -90,7 +90,7 @@ class AuthenticatorBase:
         credentials to be presented to start using again.  It should flush any
         session settings changes or caches.
         """
-        raise NotImpementedError
+        raise NotImplementedError
 
     def replace_data(self, src, dst):
         """
@@ -102,7 +102,7 @@ class AuthenticatorBase:
         else's existing session - for debugging or support.
         It is an experimental idea and should be used carefully.
         """
-        raise NotImpementedError
+        raise NotImplementedError
 
     def request2session(self, request):
         """
@@ -110,7 +110,7 @@ class AuthenticatorBase:
         and return a Session object describing this session.
         Only previously authenticated and active sessions should be returned.
         """
-        raise NotImpementedError
+        raise NotImplementedError
 
     def login2session(self, response, user, password):
         """
@@ -119,7 +119,7 @@ class AuthenticatorBase:
         - Update the response object with any needed data (expected to be used
           to set a cookie)
         """
-        raise NotImpementedError
+        raise NotImplementedError
 
 
 class AuthenticatorTest(AuthenticatorBase):
