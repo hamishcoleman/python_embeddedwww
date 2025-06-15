@@ -17,6 +17,8 @@ build-dep:
 install:
 	mkdir -p $(INSTALLDIR)
 	install -p server.py $(INSTALLDIR)/server
+	echo Not currently properly installable
+	false
 
 tar:    $(tarfile)
 
