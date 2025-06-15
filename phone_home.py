@@ -22,6 +22,7 @@ sys.path.insert(
 
 
 import hc.http.WebSite  # noqa: E402
+import hc.http.sqlite   # noqa: E402
 
 
 def argparser():
@@ -29,6 +30,10 @@ def argparser():
     ap.add_argument(
         "-d", "--debug",
         action="store_true",
+    )
+    ap.add_argument(
+        "--db",
+        help="Location of database",
     )
     ap.add_argument(
         "port",
@@ -149,7 +154,11 @@ def main():
     """
 
     config = hc.http.WebSite.Config()
-    config.auth = hc.http.WebSite.AuthenticatorTest()
+    if args.db:
+        config.auth = hc.http.sqlite.Authenticator(args.db)
+    else:
+        config.auth = hc.http.WebSite.AuthenticatorTest()
+
     config.routes = {
         "/auth/login": hc.http.WebSite.PagesLogin(),
         "/auth/list": hc.http.WebSite.PagesAuthList(),
