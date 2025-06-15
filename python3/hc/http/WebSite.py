@@ -402,6 +402,12 @@ class PagesLogin(Pages):
         form = handler.get_formdata()
         action = form[b"a"][0].decode("utf8")
 
+        if action == "logout":
+            try:
+                handler.config.auth.end_session(handler.session)
+            except KeyError:
+                handler.session.state = "bad"
+
         if action == "login":
             user = form[b"user"][0].decode("utf8")
             password = form[b"pass"][0].decode("utf8")
@@ -411,19 +417,12 @@ class PagesLogin(Pages):
                 password
             )
 
-            if handler.session.has_auth:
-                # Make reloading nicer
-                handler.send_header("Location", handler.path)
-                handler.send_error(HTTPStatus.SEE_OTHER)
-                return
-        else:
-            try:
-                handler.config.auth.end_session(handler.session)
-            except KeyError:
-                handler.session.state = "bad"
+        # TODO: show something to tell user they have a bad login
 
-        # TODO: refactor to never chain
-        return self.do_GET(handler)
+        # Make reloading nicer
+        handler.send_header("Location", handler.path)
+        handler.send_error(HTTPStatus.SEE_OTHER)
+        return
 
     def do_GET(self, handler):
         self.set_attribs(handler)
