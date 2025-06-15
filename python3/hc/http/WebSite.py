@@ -45,16 +45,12 @@ class Session:
         return self.data["user"]
 
     @property
-    def role(self):
-        return self.data["role"]
-
-    @property
     def has_auth(self):
         return self.state == "login"
 
     @property
     def has_admin(self):
-        return self.role == "admin"
+        return bool(self.data["admin"])
 
     @classmethod
     def from_request(cls, request):
@@ -135,11 +131,11 @@ class AuthenticatorTest(AuthenticatorBase):
         fake_user = {
             "admin": {
                 "desc": "A Test Admin",
-                "role": "admin",
+                "admin": True,
             },
             "user": {
                 "desc": "Test User",
-                "role": "user",
+                "admin": False,
             },
         }
         fake_pass = {
