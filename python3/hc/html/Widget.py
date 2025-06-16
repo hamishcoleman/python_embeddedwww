@@ -54,6 +54,49 @@ class Default:
         return r
 
     @classmethod
+    def show_dict2(cls, d, columns, actions):
+        """Given a dict of dicts, output a nice table"""
+
+        r = []
+        r += ["""
+         <table class="sortable">
+          <caption>A Caption</caption>
+          <thead>
+           <tr>
+        """]
+
+        for column in columns:
+            r += [f"""
+             <th>
+              <button>
+               {column}
+              </button>
+             </th>
+            """]
+        r += ['<th>Action<span aria-hidden="true"></span>']
+        r += ["""
+          </thead>
+          <tbody>
+        """]
+
+        for k, row in d.items():
+            r += ["<tr>"]
+            for column in columns:
+                r += [f"<td>{row[column]}</td>"]
+            r += ["<td>"]
+            for action in actions:
+                r += [f"""
+                 <button name="a" value="{action}/{k}">{action}</button>
+                """]
+            r += ["</tr>"]
+
+        r += ["""
+         </tbody>
+         </table>
+        """]
+        return r
+
+    @classmethod
     def show_dictlist(cls, dl, actions):
         r = []
         r += ["""
