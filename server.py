@@ -166,6 +166,7 @@ class PagesQuery(hc.http.WebSite.Pages):
          </html>
         """]
 
+        data = [str(x) for x in data]
         data = "".join(data)
         handler.send_page(HTTPStatus.OK, data)
 
@@ -242,6 +243,7 @@ class PagesChat(hc.http.WebSite.Pages):
          </table>
         """]
 
+        data = [str(x) for x in data]
         data = "".join(data)
         handler.send_page(HTTPStatus.OK, data)
 

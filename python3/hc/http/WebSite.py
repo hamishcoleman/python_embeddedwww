@@ -481,6 +481,7 @@ class PagesLogin(Pages):
           </body>
         """]
 
+        data = [str(x) for x in data]
         data = "".join(data)
         handler.send_page(code, data)
 
