@@ -428,7 +428,7 @@ class PagesLogin(Pages):
         self.set_attribs(handler)
 
         data = []
-        data = handler.config.Widget.head("Login")
+        data += [handler.config.Widget.head("Login")]
         data += ["<body>"]
         data += handler.config.Widget.navbar()
         data += ["""

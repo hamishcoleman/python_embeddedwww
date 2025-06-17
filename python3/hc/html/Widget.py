@@ -1,4 +1,24 @@
 
+class DefaultHead:
+    def __init__(self, title):
+        self.title = title
+        self.stylesheets = []
+
+    def __repr__(self):
+        r = []
+        r += ["<!DOCTYPE html>\n"]
+        r += ["<html>\n"]
+        r += ["<head>\n"]
+        r += [f"<title>{self.title}</title>\n"]
+        for url in self.stylesheets:
+            r += [f'<link rel="stylesheet" type="text/css" href="{url}" />\n']
+        r += ["</head>\n"]
+        return "".join(r)
+
+    def add_stylesheet(self, url):
+        self.stylesheets.append(url)
+
+
 class Default:
     @classmethod
     def style(cls):
@@ -8,15 +28,9 @@ class Default:
 
     @classmethod
     def head(cls, title):
-        r = []
-        r += ["""<!DOCTYPE html>
-         <html>
-         <head>
-        """]
-        r += [f"<title>{title}</title>"]
-        r += cls.style()
-        r += ["</head>"]
-        return r
+        obj = DefaultHead(title)
+        obj.add_stylesheet("/style.css")
+        return obj
 
     @classmethod
     def navbar(cls):
