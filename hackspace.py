@@ -45,19 +45,15 @@ def argparser():
 class Widget(hc.html.Widget.Default):
     @classmethod
     def head(cls, title):
-        r = []
-        r += [f"""<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{title}</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-"""]
-        r += cls.style()
-        r += ["</head>"]
-        return r
+        obj = super().head(title)
+        obj.meta = [
+            'charset="utf-8"',
+            'http-equiv="X-UA-Compatible" content="IE=edge"',
+            'name="viewport" content="width=device-width, initial-scale=1"',
+            'http-equiv="Content-Type" content="text/html; charset=utf-8"',
+        ]
+        obj.stylesheets += ["/style.css"]
+        return obj
 
     @classmethod
     def navbar(cls, username=None):
@@ -122,7 +118,6 @@ class PagesAccount(hc.http.WebSite.Pages):
 
         data = []
         head = handler.config.Widget.head("DSL Door")
-        head.add_stylesheet("/style.css")
         data += [head]
         data += ["<body>\n"]
         data += handler.config.Widget.navbar(handler.session.user)
@@ -218,7 +213,6 @@ class PagesPayment(hc.http.WebSite.Pages):
 
         data = []
         head = handler.config.Widget.head("DSL Door")
-        head.add_stylesheet("/style.css")
         data += [head]
         data += ["<body>\n"]
         data += handler.config.Widget.navbar(handler.session.user)
@@ -259,7 +253,6 @@ class PagesPair(hc.http.WebSite.Pages):
 
         data = []
         head = handler.config.Widget.head("DSL Door")
-        head.add_stylesheet("/style.css")
         data += [head]
         data += ["<body>\n"]
         data += handler.config.Widget.navbar(handler.session.user)
@@ -293,7 +286,6 @@ class PagesDoor(hc.http.WebSite.Pages):
 
         data = []
         head = handler.config.Widget.head("DSL Door")
-        head.add_stylesheet("/style.css")
         data += [head]
         data += ["<body>\n"]
         data += handler.config.Widget.navbar(handler.session.user)
@@ -336,7 +328,6 @@ class PagesRoot(hc.http.WebSite.Pages):
 
         data = []
         head = handler.config.Widget.head("DSL Door")
-        head.add_stylesheet("/style.css")
         data += [head]
         data += ["<body>\n"]
         data += handler.config.Widget.navbar(handler.session.user)

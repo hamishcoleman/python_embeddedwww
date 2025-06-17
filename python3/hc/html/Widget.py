@@ -4,12 +4,16 @@ class DefaultHead:
         self.title = None
         self.stylesheets = []
         self.scripts = []
+        self.meta = []
 
     def __repr__(self):
         r = []
         r += ["<!DOCTYPE html>\n"]
         r += ["<html>\n"]
         r += ["<head>\n"]
+        if self.meta:
+            for meta in self.meta:
+                r += [f'<meta {meta}>']
         if self.title:
             r += [f"<title>{self.title}</title>\n"]
         for url in self.stylesheets:
