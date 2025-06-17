@@ -445,11 +445,11 @@ window.addEventListener('load', function () {
         "/sitemap": hc.http.WebSite.PagesMap(),
         "/style.css": hc.http.WebSite.PagesStatic(
             style,
-            content_type="text/css",
+            content_type="text/css; charset=utf-8",
         ),
         "/sortable.js": hc.http.WebSite.PagesStatic(
             js,
-            content_type="application/javascript",
+            content_type="application/javascript; charset=utf-8",
         ),
 
         "/phone_home": PagesPhoneHome(data),

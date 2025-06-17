@@ -220,7 +220,7 @@ class PagesMetrics(Pages):
 
 
 class PagesStatic(Pages):
-    def __init__(self, body, content_type="text/html"):
+    def __init__(self, body, content_type="text/html; charset=utf-8"):
         self.body = body
         self.content_type = content_type
         super().__init__()
@@ -350,7 +350,7 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
         except AttributeError:
             pass
 
-    def send_page(self, code, body, content_type="text/html"):
+    def send_page(self, code, body, content_type="text/html; charset=utf-8"):
         if isinstance(body, str):
             body = body.encode("utf8")
         self.send_response(code)
