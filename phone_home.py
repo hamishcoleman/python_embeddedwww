@@ -111,11 +111,13 @@ class PagesPhoneHome(hc.http.WebSite.Pages):
         #  <form method="post">
         # """]
 
-        data += handler.config.Widget.show_dict2(
-            self.data,
-            ["instance_id", "hostname", "fqdn", "pub_key_ed25519"],
-            ["del"],
-        )
+        table = handler.config.Widget.show_dict2()
+        table.style = "sortable"
+        table.caption = "A Caption"
+        table.data = self.data
+        table.columns = ["instance_id", "hostname", "fqdn", "pub_key_ed25519"]
+        table.actions = ["del"]
+        data += [table]
 
         # data += ["</form>"]
 

@@ -26,13 +26,64 @@ class DefaultHead:
         self.scripts.append(url)
 
 
-class Default:
-    @classmethod
-    def style(cls):
-        r = []
-        r += ['<link rel="stylesheet" type="text/css" href="/style.css" />']
-        return r
+class DefaultTable:
+    def __init__(self):
+        self.style = "w"
+        self.caption = None
+        self.data = None
+        self.actions = []
+        self.columns = []
 
+    def __str__(self):
+        """Given a dict of dicts, output a nice table"""
+
+        r = []
+        r += [f'<table class="{self.style}">\n']
+        if self.caption:
+            r += [f"<caption>{self.caption}</caption>\n"]
+        r += ["""
+          <thead>
+           <tr>
+        """]
+
+        for column in self.columns:
+            r += [f"""
+             <th>
+              <button>
+               {column}
+              </button>
+             </th>
+            """]
+
+        if self.actions:
+            r += ['<th>Action<span aria-hidden="true"></span>']
+
+        r += ["""
+          </thead>
+          <tbody>
+        """]
+
+        # TODO: also support list()
+
+        for k, row in self.data.items():
+            r += ["<tr>"]
+            for column in self.columns:
+                r += [f"<td>{row[column]}</td>"]
+            r += ["<td>"]
+            for action in self.actions:
+                r += [f"""
+                 <button name="a" value="{action}/{k}">{action}</button>
+                """]
+            r += ["</tr>"]
+
+        r += ["""
+         </tbody>
+         </table>
+        """]
+        return "".join(r)
+
+
+class Default:
     @classmethod
     def head(cls, title):
         obj = DefaultHead()
@@ -75,47 +126,8 @@ class Default:
         return r
 
     @classmethod
-    def show_dict2(cls, d, columns, actions):
-        """Given a dict of dicts, output a nice table"""
-
-        r = []
-        r += ["""
-         <table class="sortable">
-          <caption>A Caption</caption>
-          <thead>
-           <tr>
-        """]
-
-        for column in columns:
-            r += [f"""
-             <th>
-              <button>
-               {column}
-              </button>
-             </th>
-            """]
-        r += ['<th>Action<span aria-hidden="true"></span>']
-        r += ["""
-          </thead>
-          <tbody>
-        """]
-
-        for k, row in d.items():
-            r += ["<tr>"]
-            for column in columns:
-                r += [f"<td>{row[column]}</td>"]
-            r += ["<td>"]
-            for action in actions:
-                r += [f"""
-                 <button name="a" value="{action}/{k}">{action}</button>
-                """]
-            r += ["</tr>"]
-
-        r += ["""
-         </tbody>
-         </table>
-        """]
-        return r
+    def show_dict2(cls):
+        return DefaultTable()
 
     @classmethod
     def show_dictlist(cls, dl, actions):
