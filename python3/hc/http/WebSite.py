@@ -214,6 +214,7 @@ class PagesMetrics(Pages):
             d += [f'site_request_count{{route="{route}"}} {page.request}\n']
             d += [f'site_request_seconds{{route="{route}"}} {page.elapsed}\n']
 
+        d = [str(x) for x in d]
         d = "".join(d)
         handler.send_page(HTTPStatus.OK, d, content_type="text/plain")
 
@@ -361,7 +362,9 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
 class PagesMap(Pages):
     def do_GET(self, handler):
         data = []
-        data += handler.config.Widget.head("Index")
+        head = handler.config.Widget.head("Index")
+        head.add_stylesheet("/style.css")
+        data += [head]
         data += ["<body>"]
         data += handler.config.Widget.navbar()
         data += ["<ul>"]
@@ -379,6 +382,7 @@ class PagesMap(Pages):
          </html>
         """]
 
+        data = [str(x) for x in data]
         data = "".join(data)
         handler.send_page(HTTPStatus.OK, data)
 
@@ -428,7 +432,9 @@ class PagesLogin(Pages):
         self.set_attribs(handler)
 
         data = []
-        data += [handler.config.Widget.head("Login")]
+        head = handler.config.Widget.head("Login")
+        head.add_stylesheet("/style.css")
+        data += [head]
         data += ["<body>"]
         data += handler.config.Widget.navbar()
         data += ["""
@@ -516,7 +522,9 @@ class PagesAuthList(Pages):
 
     def do_GET(self, handler):
         data = []
-        data += handler.config.Widget.head("Sessions")
+        head = handler.config.Widget.head("Sessions")
+        head.add_stylesheet("/style.css")
+        data += [head]
         data += ["<body>"]
         data += handler.config.Widget.navbar()
         data += ['<form method="post">']
@@ -532,6 +540,7 @@ class PagesAuthList(Pages):
          </html>
         """]
 
+        data = [str(x) for x in data]
         data = "".join(data)
         handler.send_page(HTTPStatus.OK, data)
 
@@ -572,7 +581,9 @@ class PagesKV(Pages):
 
     def do_GET(self, handler):
         data = []
-        data += handler.config.Widget.head("KV")
+        head = handler.config.Widget.head("KV")
+        head.add_stylesheet("/style.css")
+        data += [head]
         data += ["<body>"]
         data += handler.config.Widget.navbar()
         data += ["""
@@ -593,6 +604,7 @@ class PagesKV(Pages):
          </html>
         """]
 
+        data = [str(x) for x in data]
         data = "".join(data)
         handler.send_page(HTTPStatus.OK, data)
 
@@ -625,7 +637,9 @@ class PagesKVEdit(Pages):
         val = self.kv.get(key, "")
 
         data = []
-        data += handler.config.Widget.head("KV Edit")
+        head = handler.config.Widget.head("KV Edit")
+        head.add_stylesheet("/style.css")
+        data += [head]
         data += ["<body>"]
         data += handler.config.Widget.navbar()
         data += [f"""
@@ -638,5 +652,6 @@ class PagesKVEdit(Pages):
         </html>
         """]
 
+        data = [str(x) for x in data]
         data = "".join(data)
         handler.send_page(HTTPStatus.OK, data)

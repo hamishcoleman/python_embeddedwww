@@ -1,7 +1,7 @@
 
 class DefaultHead:
-    def __init__(self, title):
-        self.title = title
+    def __init__(self):
+        self.title = None
         self.stylesheets = []
 
     def __repr__(self):
@@ -9,7 +9,8 @@ class DefaultHead:
         r += ["<!DOCTYPE html>\n"]
         r += ["<html>\n"]
         r += ["<head>\n"]
-        r += [f"<title>{self.title}</title>\n"]
+        if self.title:
+            r += [f"<title>{self.title}</title>\n"]
         for url in self.stylesheets:
             r += [f'<link rel="stylesheet" type="text/css" href="{url}" />\n']
         r += ["</head>\n"]
@@ -28,8 +29,8 @@ class Default:
 
     @classmethod
     def head(cls, title):
-        obj = DefaultHead(title)
-        obj.add_stylesheet("/style.css")
+        obj = DefaultHead()
+        obj.title = title
         return obj
 
     @classmethod

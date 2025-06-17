@@ -139,7 +139,9 @@ class PagesQuery(hc.http.WebSite.Pages):
 
     def do_GET(self, handler):
         data = []
-        data += handler.config.Widget.head("Queries")
+        head = handler.config.Widget.head("Queries")
+        head.add_stylesheet("/style.css")
+        data += [head]
         data += ["<body>"]
         data += handler.config.Widget.navbar()
         data += ["""
@@ -223,7 +225,9 @@ class PagesChat(hc.http.WebSite.Pages):
 
     def do_GET(self, handler):
         data = []
-        data += handler.config.Widget.head("Chat")
+        head = handler.config.Widget.head("Chat")
+        head.add_stylesheet("/style.css")
+        data += [head]
         data += ["<body>"]
         data += handler.config.Widget.navbar()
         data += ["<table>"]

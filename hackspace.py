@@ -121,7 +121,9 @@ class PagesAccount(hc.http.WebSite.Pages):
         rfid_id_last_seen = "766"
 
         data = []
-        data += handler.config.Widget.head("DSL Door")
+        head = handler.config.Widget.head("DSL Door")
+        head.add_stylesheet("/style.css")
+        data += [head]
         data += ["<body>\n"]
         data += handler.config.Widget.navbar(handler.session.user)
         data += ["""
@@ -215,7 +217,9 @@ class PagesPayment(hc.http.WebSite.Pages):
         valid_form = True
 
         data = []
-        data += handler.config.Widget.head("DSL Door")
+        head = handler.config.Widget.head("DSL Door")
+        head.add_stylesheet("/style.css")
+        data += [head]
         data += ["<body>\n"]
         data += handler.config.Widget.navbar(handler.session.user)
         data += ["""
@@ -254,7 +258,9 @@ class PagesPair(hc.http.WebSite.Pages):
             return
 
         data = []
-        data += handler.config.Widget.head("DSL Door")
+        head = handler.config.Widget.head("DSL Door")
+        head.add_stylesheet("/style.css")
+        data += [head]
         data += ["<body>\n"]
         data += handler.config.Widget.navbar(handler.session.user)
 
@@ -286,7 +292,9 @@ class PagesDoor(hc.http.WebSite.Pages):
             return
 
         data = []
-        data += handler.config.Widget.head("DSL Door")
+        head = handler.config.Widget.head("DSL Door")
+        head.add_stylesheet("/style.css")
+        data += [head]
         data += ["<body>\n"]
         data += handler.config.Widget.navbar(handler.session.user)
         data += ["""
@@ -327,7 +335,9 @@ class PagesRoot(hc.http.WebSite.Pages):
             handler.send_error(HTTPStatus.SEE_OTHER)
 
         data = []
-        data += handler.config.Widget.head("DSL Door")
+        head = handler.config.Widget.head("DSL Door")
+        head.add_stylesheet("/style.css")
+        data += [head]
         data += ["<body>\n"]
         data += handler.config.Widget.navbar(handler.session.user)
         data += ["""
