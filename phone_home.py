@@ -95,16 +95,11 @@ class PagesPhoneHome(hc.http.WebSite.Pages):
 
     def do_GET(self, handler):
         data = []
-        data += ["""<!DOCTYPE html>
-         <html>
-         <head>
-        """]
-        data += [f"<title>Phone Home</title>"]
-        data += handler.config.Widget.style()
-        data += ['<script src="/sortable.js"></script>']
-        data += ["</head>"]
-        data += ["<body>"]
+        head = handler.config.Widget.head("Phone Home")
+        head.add_stylesheet("/style.css")
+        head.add_script("/sortable.js")
         # TODO: this harcodes the location of the javascript
+        data += [head]
 
         data += handler.config.Widget.navbar()
 
@@ -272,7 +267,8 @@ table.sortable th:not([aria-sort]) button:hover span::after {
  *
  *   File:   sortable-table.js
  *
- *   Desc:   Adds sorting to a HTML data table that implements ARIA Authoring Practices
+ *   Desc:   Adds sorting to a HTML data table that implements ARIA Authoring
+             Practices
  */
 
 'use strict';

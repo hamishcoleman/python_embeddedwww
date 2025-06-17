@@ -3,6 +3,7 @@ class DefaultHead:
     def __init__(self):
         self.title = None
         self.stylesheets = []
+        self.scripts = []
 
     def __repr__(self):
         r = []
@@ -13,11 +14,16 @@ class DefaultHead:
             r += [f"<title>{self.title}</title>\n"]
         for url in self.stylesheets:
             r += [f'<link rel="stylesheet" type="text/css" href="{url}" />\n']
+        for url in self.scripts:
+            r += [f'<script src="{url}"></script>\n']
         r += ["</head>\n"]
         return "".join(r)
 
     def add_stylesheet(self, url):
         self.stylesheets.append(url)
+
+    def add_script(self, url):
+        self.scripts.append(url)
 
 
 class Default:
