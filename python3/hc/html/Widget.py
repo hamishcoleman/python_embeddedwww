@@ -72,13 +72,15 @@ class DefaultTable:
         for k, row in self.data.items():
             r += ["<tr>"]
             for column in self.columns:
-                r += [f"<td>{row[column]}</td>"]
-            r += ["<td>"]
-            for action in self.actions:
-                r += [f"""
-                 <button name="a" value="{action}/{k}">{action}</button>
-                """]
-            r += ["</tr>"]
+                r += [f"<td>{row[column]}</td>\n"]
+            if self.actions:
+                r += ["<td>"]
+                for action in self.actions:
+                    r += [
+                        '<button form="action" name="a" ',
+                        f'value="{action}/{k}">{action}</button>',
+                    ]
+            r += ["</tr>\n"]
 
         r += ["""
          </tbody>

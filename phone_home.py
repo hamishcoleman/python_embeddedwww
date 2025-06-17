@@ -107,9 +107,10 @@ class PagesPhoneHome(hc.http.WebSite.Pages):
             handler.send_error(HTTPStatus.UNAUTHORIZED)
             return
 
-        # data += ["""
-        #  <form method="post">
-        # """]
+        data += ["""
+         <form id="action" method="post">
+         </form>
+        """]
 
         table = handler.config.Widget.show_dict2()
         table.style = "sortable"
@@ -118,8 +119,6 @@ class PagesPhoneHome(hc.http.WebSite.Pages):
         table.columns = ["instance_id", "hostname", "fqdn", "pub_key_ed25519"]
         table.actions = ["del"]
         data += [table]
-
-        # data += ["</form>"]
 
         data += ["""
           </body>
