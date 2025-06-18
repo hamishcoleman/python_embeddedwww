@@ -55,12 +55,13 @@ class DefaultTable:
              <th>
               <button>
                {column}
+               <span aria-hidden="true"></span>
               </button>
              </th>
             """]
 
         if self.actions:
-            r += ['<th>Action<span aria-hidden="true"></span>']
+            r += ['<th>Action']
 
         r += ["""
           </thead>
