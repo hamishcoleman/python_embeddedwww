@@ -1,6 +1,7 @@
 import base64
 import hc.html.Widget
 import http.server
+import shutil
 import time
 import urllib.parse
 import uuid
@@ -231,6 +232,22 @@ class PagesStatic(Pages):
             self.body,
             content_type=self.content_type,
         )
+
+
+class PagesStaticFile(Pages):
+    def __init__(self, filename, content_type="text/html; charset=utf-8"):
+        self.filename = filename
+        self.content_type = content_type
+        super().__init__()
+
+    def do_GET(self, handler):
+        # TODO: there are a lot of useful bits in
+        # http.server.SimpleHTTPRequestHandler.send_head()
+        with open(self.filename, "rb") as f:
+            handler.send_response(HTTPStatus.OK)
+            handler.send_header("Content-type", self.content_type)
+            handler.end_headers()
+            shutil.copyfileobj(f, handler.wfile)
 
 
 class Config:
