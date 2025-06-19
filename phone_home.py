@@ -88,6 +88,7 @@ class PagesPhoneHome(hc.http.WebSite.Pages):
                 v = v.decode("utf8")
             item[k] = v
 
+        item["_ctime"] = handler.time_start
         key = item["instance_id"]
         self.data[key] = item
 
@@ -118,6 +119,7 @@ class PagesPhoneHome(hc.http.WebSite.Pages):
         table.caption = "A Caption"
         table.data = self.data
         table.columns = {
+            "_ctime": "Created",
             "instance_id": "ID",
             "hostname": None,
             "fqdn": None,
