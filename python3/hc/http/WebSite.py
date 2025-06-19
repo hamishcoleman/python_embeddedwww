@@ -523,6 +523,9 @@ class PagesAuthList(Pages):
 
         if action == "del":
             handler.config.auth.end_session(action_session)
+            handler.send_header("Location", handler.path)
+            handler.send_error(HTTPStatus.SEE_OTHER)
+            return
         elif action == "clone":
             handler.config.auth.replace_data(action_session, self.session)
 
@@ -533,9 +536,6 @@ class PagesAuthList(Pages):
         else:
             handler.send_error(HTTPStatus.BAD_REQUEST)
             return
-
-        # TODO: refactor to never chain
-        return self.do_GET(handler)
 
     def do_GET(self, handler):
         data = []
