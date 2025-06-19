@@ -544,15 +544,21 @@ class PagesAuthList(Pages):
         data += [head]
         data += ["<body>"]
         data += handler.config.Widget.navbar()
-        data += ['<form method="post">']
 
-        data += handler.config.Widget.show_dict(
-            handler.config.auth.sessions,
-            ["del", "clone"],
-        )
+        data += ['<form id="action" method="post"></form>']
+
+        table = handler.config.Widget.show_dict2()
+        table.caption = "Sessions List"
+        table.data = handler.config.auth.sessions
+        table.columns = {
+            "createdat": None,
+            "user": None,
+            "admin": None,
+        }
+        table.actions = ["del", "clone"]
+        data += [table]
 
         data += ["""
-           </form>
           </body>
          </html>
         """]
