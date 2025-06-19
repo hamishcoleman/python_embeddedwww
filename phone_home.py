@@ -117,7 +117,12 @@ class PagesPhoneHome(hc.http.WebSite.Pages):
         table.style = "sortable"
         table.caption = "A Caption"
         table.data = self.data
-        table.columns = ["instance_id", "hostname", "fqdn", "pub_key_ed25519"]
+        table.columns = {
+            "instance_id": "ID",
+            "hostname": None,
+            "fqdn": None,
+            "pub_key_ed25519": "Pub Key",
+        }
         table.actions = ["del"]
         data += [table]
 

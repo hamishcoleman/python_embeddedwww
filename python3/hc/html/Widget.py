@@ -36,7 +36,7 @@ class DefaultTable:
         self.caption = None
         self.data = None
         self.actions = []
-        self.columns = []
+        self.columns = {}
 
     def __str__(self):
         """Given a dict of dicts, output a nice table"""
@@ -50,7 +50,9 @@ class DefaultTable:
            <tr>
         """]
 
-        for column in self.columns:
+        for k, column in self.columns.items():
+            if column is None:
+                column = k
             r += [f"""
              <th>
               <button>
@@ -72,8 +74,12 @@ class DefaultTable:
 
         for k, row in self.data.items():
             r += ["<tr>"]
-            for column in self.columns:
-                r += [f"<td>{row[column]}</td>\n"]
+            for column in self.columns.keys():
+                if column is None:
+                    val = k
+                else:
+                    val = row[column]
+                r += [f"<td>{val}</td>\n"]
             if self.actions:
                 r += ["<td>"]
                 for action in self.actions:
