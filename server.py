@@ -141,6 +141,8 @@ class PagesQuery(hc.http.WebSite.Pages):
         data = []
         head = handler.config.Widget.head("Queries")
         head.add_stylesheet("/style.css")
+        head.add_stylesheet("/sortable.css")
+        head.add_script("/sortable.js")
         data += [head]
         data += ["<body>"]
         data += handler.config.Widget.navbar()
@@ -153,15 +155,21 @@ class PagesQuery(hc.http.WebSite.Pages):
 
         if handler.session.has_auth:
             data += ["""
-             <form method="post">
+             <form id="action" method="post"></form>
             """]
 
-            data += handler.config.Widget.show_dict(
-                self.queries,
-                ["allow", "deny", "del", "edit"],
-            )
-
-            data += ["</form>"]
+            table = handler.config.Widget.show_dict2()
+            table.style = "sortable"
+            table.data = self.queries
+            table.columns = {
+                "t": "Created",
+                "q": "Query",
+                "h": "Host",
+                "desc": None,
+                "a": "Allowed",
+            }
+            table.actions = ["allow", "deny", "del", "edit"]
+            data += [table]
 
         data += ["""
           </body>
@@ -347,6 +355,14 @@ def main():
         "/style.css": hc.http.WebSite.PagesStatic(
             style,
             content_type="text/css",
+        ),
+        "/sortable.js": hc.http.WebSite.PagesStaticFile(
+            "static/sortable.js",
+            content_type="application/javascript; charset=utf-8",
+        ),
+        "/sortable.css": hc.http.WebSite.PagesStaticFile(
+            "static/sortable.css",
+            content_type="text/css; charset=utf-8",
         ),
     }
     config.routes_subtree = {
