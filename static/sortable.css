@@ -72,7 +72,9 @@ table.sortable td.num {
   text-align: right;
 }
 
-table.sortable tbody tr:nth-child(odd) {
+table.sortable tbody tr:nth-child(6n-1),
+table.sortable tbody tr:nth-child(6n),
+table.sortable tbody tr:nth-child(6n+1) {
   background-color: #ddd;
 }
 
