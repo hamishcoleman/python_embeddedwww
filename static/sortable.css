@@ -3,11 +3,6 @@
   top: -30em;
 }
 
-table.sortable td,
-table.sortable th {
-  padding: 0.125em 0.25em;
-}
-
 table.sortable th {
   font-weight: bold;
   border-bottom: thin solid #888;
@@ -18,13 +13,7 @@ table.sortable th.no-sort {
   padding-top: 0.35em;
 }
 
-table.sortable th:nth-child(5) {
-  width: 10em;
-}
-
 table.sortable th button {
-  padding: 4px;
-  margin: 1px;
   font-size: 100%;
   font-weight: bold;
   background: transparent;
@@ -82,8 +71,6 @@ table.sortable tbody tr:nth-child(6n+1) {
 
 table.sortable th button:focus,
 table.sortable th button:hover {
-  padding: 2px;
-  border: 2px solid currentcolor;
   background-color: #e5f4ff;
 }
 
