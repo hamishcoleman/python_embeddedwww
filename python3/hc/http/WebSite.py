@@ -380,7 +380,7 @@ class PagesMap(Pages):
     def do_GET(self, handler):
         data = []
         head = handler.config.Widget.head("Index")
-        head.add_stylesheet("/style.css")
+        head.stylesheets.add("/style.css")
         data += [head]
         data += ["<body>"]
         data += handler.config.Widget.navbar()
@@ -450,7 +450,7 @@ class PagesLogin(Pages):
 
         data = []
         head = handler.config.Widget.head("Login")
-        head.add_stylesheet("/style.css")
+        head.stylesheets.add("/style.css")
         data += [head]
         data += ["<body>"]
         data += handler.config.Widget.navbar()
@@ -540,7 +540,7 @@ class PagesAuthList(Pages):
     def do_GET(self, handler):
         data = []
         head = handler.config.Widget.head("Sessions")
-        head.add_stylesheet("/style.css")
+        head.stylesheets.add("/style.css")
         data += [head]
         data += ["<body>"]
         data += handler.config.Widget.navbar()
@@ -605,7 +605,7 @@ class PagesKV(Pages):
     def do_GET(self, handler):
         data = []
         head = handler.config.Widget.head("KV")
-        head.add_stylesheet("/style.css")
+        head.stylesheets.add("/style.css")
         data += [head]
         data += ["<body>"]
         data += handler.config.Widget.navbar()
@@ -661,7 +661,7 @@ class PagesKVEdit(Pages):
 
         data = []
         head = handler.config.Widget.head("KV Edit")
-        head.add_stylesheet("/style.css")
+        head.stylesheets.add("/style.css")
         data += [head]
         data += ["<body>"]
         data += handler.config.Widget.navbar()

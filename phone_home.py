@@ -97,9 +97,7 @@ class PagesPhoneHome(hc.http.WebSite.Pages):
     def do_GET(self, handler):
         data = []
         head = handler.config.Widget.head("Phone Home")
-        head.add_stylesheet("/style.css")
-        head.add_stylesheet("/sortable.css")
-        head.add_script("/sortable.js")
+        head.stylesheets.add("/style.css")
         # TODO: this harcodes the location of the javascript
         data += [head]
 
@@ -126,6 +124,7 @@ class PagesPhoneHome(hc.http.WebSite.Pages):
             "pub_key_ed25519": "Pub Key",
         }
         table.actions = ["del"]
+        table.update_head(head)
         data += [table]
 
         data += ["""
@@ -183,11 +182,11 @@ def main():
             style,
             content_type="text/css; charset=utf-8",
         ),
-        "/sortable.js": hc.http.WebSite.PagesStaticFile(
+        "/static/sortable.js": hc.http.WebSite.PagesStaticFile(
             "static/sortable.js",
             content_type="application/javascript; charset=utf-8",
         ),
-        "/sortable.css": hc.http.WebSite.PagesStaticFile(
+        "/static/sortable.css": hc.http.WebSite.PagesStaticFile(
             "static/sortable.css",
             content_type="text/css; charset=utf-8",
         ),

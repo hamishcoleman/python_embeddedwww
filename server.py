@@ -140,9 +140,7 @@ class PagesQuery(hc.http.WebSite.Pages):
     def do_GET(self, handler):
         data = []
         head = handler.config.Widget.head("Queries")
-        head.add_stylesheet("/style.css")
-        head.add_stylesheet("/sortable.css")
-        head.add_script("/sortable.js")
+        head.stylesheets.add("/style.css")
         data += [head]
         data += ["<body>"]
         data += handler.config.Widget.navbar()
@@ -169,6 +167,7 @@ class PagesQuery(hc.http.WebSite.Pages):
                 "a": "Allowed",
             }
             table.actions = ["allow", "deny", "del", "edit"]
+            table.update_head(head)
             data += [table]
 
         data += ["""
@@ -234,7 +233,7 @@ class PagesChat(hc.http.WebSite.Pages):
     def do_GET(self, handler):
         data = []
         head = handler.config.Widget.head("Chat")
-        head.add_stylesheet("/style.css")
+        head.stylesheets.add("/style.css")
         data += [head]
         data += ["<body>"]
         data += handler.config.Widget.navbar()
@@ -356,11 +355,11 @@ def main():
             style,
             content_type="text/css",
         ),
-        "/sortable.js": hc.http.WebSite.PagesStaticFile(
+        "/static/sortable.js": hc.http.WebSite.PagesStaticFile(
             "static/sortable.js",
             content_type="application/javascript; charset=utf-8",
         ),
-        "/sortable.css": hc.http.WebSite.PagesStaticFile(
+        "/static/sortable.css": hc.http.WebSite.PagesStaticFile(
             "static/sortable.css",
             content_type="text/css; charset=utf-8",
         ),

@@ -2,8 +2,8 @@
 class DefaultHead:
     def __init__(self):
         self.title = None
-        self.stylesheets = []
-        self.scripts = []
+        self.stylesheets = set()
+        self.scripts = set()
         self.meta = []
 
     def __repr__(self):
@@ -22,12 +22,6 @@ class DefaultHead:
             r += [f'<script src="{url}"></script>\n']
         r += ["</head>\n"]
         return "".join(r)
-
-    def add_stylesheet(self, url):
-        self.stylesheets.append(url)
-
-    def add_script(self, url):
-        self.scripts.append(url)
 
 
 class DefaultTable:
@@ -94,6 +88,10 @@ class DefaultTable:
          </table>
         """]
         return "".join(r)
+
+    def update_head(self, head, subdir="/static"):
+        head.stylesheets.add(f"{subdir}/sortable.css")
+        head.scripts.add(f"{subdir}/sortable.js")
 
 
 class Default:
