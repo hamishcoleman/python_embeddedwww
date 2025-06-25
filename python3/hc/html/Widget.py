@@ -72,8 +72,12 @@ class DefaultTable:
                 if column is None:
                     val = k
                 else:
-                    val = row[column]
+                    if isinstance(row, dict):
+                        val = row[column]
+                    else:
+                        val = row
                 r += [f"<td>{val}</td>\n"]
+
             if self.actions:
                 r += ["<td>"]
                 for action in self.actions:
