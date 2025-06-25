@@ -614,15 +614,23 @@ class PagesKV(Pages):
           <input type="text" name="key" placeholder="key" autofocus>
           <input type="text" name="val" placeholder="val">
           <button name="a" value="add">add</button>
+         </form>
         """]
 
-        data += handler.config.Widget.show_dict(
-            self.data,
-            ["edit", "del"],
-        )
+        data += ['<form id="action" method="post"></form>']
+
+        table = handler.config.Widget.table()
+        table.data = self.data
+        table.columns = {
+            None: "key",
+            "val": None,
+        }
+        table.actions = ["edit", "del"]
+        # Deliberately avoid calling table.update_head() to show that it
+        # can still work as a table
+        data += [table]
 
         data += ["""
-           </form>
           </body>
          </html>
         """]
