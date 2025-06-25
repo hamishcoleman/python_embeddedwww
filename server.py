@@ -156,7 +156,7 @@ class PagesQuery(hc.http.WebSite.Pages):
              <form id="action" method="post"></form>
             """]
 
-            table = handler.config.Widget.show_dict2()
+            table = handler.config.Widget.table()
             table.style = "sortable"
             table.data = self.queries
             table.columns = {

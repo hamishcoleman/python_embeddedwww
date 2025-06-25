@@ -547,7 +547,7 @@ class PagesAuthList(Pages):
 
         data += ['<form id="action" method="post"></form>']
 
-        table = handler.config.Widget.show_dict2()
+        table = handler.config.Widget.table()
         table.caption = "Sessions List"
         table.data = handler.config.auth.sessions
         table.columns = {

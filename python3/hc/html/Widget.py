@@ -137,7 +137,7 @@ class Default:
         return r
 
     @classmethod
-    def show_dict2(cls):
+    def table(cls):
         return DefaultTable()
 
     @classmethod

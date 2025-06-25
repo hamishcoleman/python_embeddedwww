@@ -112,7 +112,7 @@ class PagesPhoneHome(hc.http.WebSite.Pages):
          </form>
         """]
 
-        table = handler.config.Widget.show_dict2()
+        table = handler.config.Widget.table()
         table.style = "sortable"
         table.caption = "A Caption"
         table.data = self.data
