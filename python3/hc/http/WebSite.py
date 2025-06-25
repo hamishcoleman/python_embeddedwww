@@ -556,6 +556,8 @@ class PagesAuthList(Pages):
             "admin": None,
         }
         table.actions = ["del", "clone"]
+        # Deliberately avoid calling table.update_head() to show that it
+        # can still work as a table
         data += [table]
 
         data += ["""
