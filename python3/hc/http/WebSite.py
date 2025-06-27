@@ -22,6 +22,39 @@ def _encoded_uuid():
     return data
 
 
+class TBF:
+    def __init__(self, rate_per_sec, burst_size):
+        self.rate_per_sec = rate_per_sec
+        self.burst_size = burst_size
+        self.tokens = burst_size
+        self.last_add = int(time.time())
+
+    def _withdraw(self, tokens):
+        if self.tokens > tokens:
+            self.tokens -= tokens
+            return True
+        return False
+
+    def _check_add(self, now):
+        elapsed = now - self.last_add
+        if elapsed < 1:
+            return
+
+        tokens = self.tokens + elapsed * self.rate_per_sec
+        if tokens > self.burst_size:
+            tokens = self.burst_size
+
+        self.tokens = tokens
+        self.last_add = now
+
+    def withdraw(self, tokens):
+        if self._withdraw(tokens):
+            return True
+
+        self._check_add(time.time())
+        return self._withdraw(tokens)
+
+
 class Session:
     """
     Information about the current user login and their session is accessed
@@ -202,6 +235,7 @@ class Pages:
     def __init__(self):
         self.request = 0
         self.elapsed = float()
+        self.tbf = TBF(1, 10)
 
 
 class PagesMetrics(Pages):
@@ -339,6 +373,11 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
             return
 
         self.page.request += 1
+
+        if not self.page.tbf.withdraw(1):
+            # TODO: increment error count
+            self.send_error(HTTPStatus.TOO_MANY_REQUESTS)
+            return
 
         # TODO: could add page.need_session and avoid getting session
         self.session = self.config.auth.request2session(self)
