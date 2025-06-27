@@ -194,8 +194,6 @@ class PagesAccount(hc.http.WebSite.Pages):
     </main>
 """]
 
-        data = [str(x) for x in data]
-        data = "".join(data)
         handler.send_page(HTTPStatus.OK, data)
 
 
@@ -230,8 +228,6 @@ class PagesPayment(hc.http.WebSite.Pages):
 <p>INSERT PAPER INSTRUCTIONS HERE
 """]
 
-        data = [str(x) for x in data]
-        data = "".join(data)
         handler.send_page(HTTPStatus.OK, data)
 
 
@@ -265,8 +261,6 @@ class PagesPair(hc.http.WebSite.Pages):
         # original site posted the "paired" message to a queue that got shown
         # on many pages, then redirected to /account_actions/
 
-        data = [str(x) for x in data]
-        data = "".join(data)
         handler.send_page(HTTPStatus.OK, data)
 
 
@@ -314,8 +308,6 @@ fix it promptly.
 
 """]
 
-        data = [str(x) for x in data]
-        data = "".join(data)
         handler.send_page(HTTPStatus.FORBIDDEN, data)
 
 
@@ -360,8 +352,6 @@ class PagesRoot(hc.http.WebSite.Pages):
     </main>
 """]
 
-        data = [str(x) for x in data]
-        data = "".join(data)
         handler.send_page(HTTPStatus.OK, data)
 
 

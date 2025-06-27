@@ -215,8 +215,6 @@ class PagesMetrics(Pages):
             d += [f'site_request_count{{route="{route}"}} {page.request}\n']
             d += [f'site_request_seconds{{route="{route}"}} {page.elapsed}\n']
 
-        d = [str(x) for x in d]
-        d = "".join(d)
         handler.send_page(HTTPStatus.OK, d, content_type="text/plain")
 
 
@@ -368,6 +366,9 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
             pass
 
     def send_page(self, code, body, content_type="text/html; charset=utf-8"):
+        if isinstance(body, list):
+            body = [str(x) for x in body]
+            body = "".join(body)
         if isinstance(body, str):
             body = body.encode("utf8")
         self.send_response(code)
@@ -399,8 +400,6 @@ class PagesMap(Pages):
          </html>
         """]
 
-        data = [str(x) for x in data]
-        data = "".join(data)
         handler.send_page(HTTPStatus.OK, data)
 
 
@@ -504,8 +503,6 @@ class PagesLogin(Pages):
           </body>
         """]
 
-        data = [str(x) for x in data]
-        data = "".join(data)
         handler.send_page(code, data)
 
 
@@ -565,8 +562,6 @@ class PagesAuthList(Pages):
          </html>
         """]
 
-        data = [str(x) for x in data]
-        data = "".join(data)
         handler.send_page(HTTPStatus.OK, data)
 
 
@@ -637,8 +632,6 @@ class PagesKV(Pages):
          </html>
         """]
 
-        data = [str(x) for x in data]
-        data = "".join(data)
         handler.send_page(HTTPStatus.OK, data)
 
 
@@ -685,6 +678,4 @@ class PagesKVEdit(Pages):
         </html>
         """]
 
-        data = [str(x) for x in data]
-        data = "".join(data)
         handler.send_page(HTTPStatus.OK, data)

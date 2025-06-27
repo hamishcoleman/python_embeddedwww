@@ -132,8 +132,6 @@ class PagesPhoneHome(hc.http.WebSite.Pages):
          </html>
         """]
 
-        data = [str(x) for x in data]
-        data = "".join(data)
         handler.send_page(HTTPStatus.OK, data)
 
 
