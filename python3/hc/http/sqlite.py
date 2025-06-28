@@ -110,7 +110,7 @@ class Authenticator(hc.http.WebSite.AuthenticatorBase):
 
         >>> check("1", "pbkdf2_sha256$260000$5o4NaW9tV4fAB7a80vwOUx$EUGNGeMxRK16YRFtIOWlJaBRlfG+6y6LP3eDxQDgRq8=")
         True
-        """
+        """  # noqa: E501
         algorithm, iterations, salt, hash1 = crypted.split("$")
         iterations = int(iterations)
         crypted2 = self._crypt_pass(password, salt, iterations)
