@@ -26,6 +26,7 @@ sys.path.insert(
 )
 
 
+import hc.http.Pages  # noqa: E402
 import hc.http.WebSite  # noqa: E402
 
 
@@ -341,7 +342,7 @@ def main():
     config.routes = {
         "/auth/login": PagesLogin(),
         "/auth/list": hc.http.WebSite.PagesAuthList(),
-        "/kv": hc.http.WebSite.PagesKV(data_kv),
+        "/kv": hc.http.Pages.KV(data_kv),
         "/metrics": hc.http.WebSite.PagesMetrics(),
         "/q": PagesQuery(data_query),
         "/sitemap": hc.http.WebSite.PagesMap(),
@@ -361,7 +362,7 @@ def main():
         ),
     }
     config.routes_subtree = {
-        "/kv/": hc.http.WebSite.PagesKVEdit(data_kv),
+        "/kv/": hc.http.Pages.KVEdit(data_kv),
         "/q/": PagesQueryAnswer(data_query, data_kv),
     }
 
