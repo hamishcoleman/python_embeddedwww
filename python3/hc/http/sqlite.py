@@ -51,10 +51,14 @@ class Authenticator(hc.http.WebSite.AuthenticatorBase):
         data = MappingProxyType(data)
         return data
 
-    def end_session(self, session):
+    def end_session(self, session, handler=None):
         if session is None:
             return
         del self.sessions[session.id]
+
+        if handler is not None:
+            session.del_cookie(handler)
+
         session.state = "logout"
 
     def replace_data(self, src, dst):

@@ -151,6 +151,16 @@ class Session:
             Path="/",
         )
 
+    def del_cookie(self, response):
+        response.send_cookie(
+            "sessionid",
+            "deleted",
+            SameSite="Strict",
+            HttpOnly=None,
+            Path="/",
+            expires="Thu, 01 Jan 1970 00:00:00 GMT",
+        )
+
 
 class AuthenticatorBase:
     """
@@ -163,12 +173,15 @@ class AuthenticatorBase:
     authenticating with JWT can be implemented by subclassing this class.
     """
 
-    def end_session(self, session):
+    def end_session(self, session, handler=None):
         """
         This is called to invalidate a session ID.  Effectively serving as a
         logout.  It is expected to flag the session ID as invalid - requiring
         credentials to be presented to start using again.  It should flush any
         session settings changes or caches.
+
+        Since ending the session might require deleting a cookie, the handler
+        can be passed in as well
         """
         raise NotImplementedError
 
@@ -239,11 +252,14 @@ class AuthenticatorTest(AuthenticatorBase):
 
         return data
 
-    def end_session(self, session):
+    def end_session(self, session, handler=None):
         if session is None:
             return
         del self.sessions[session.id]
-        # TODO: del cookie?
+
+        if handler is not None:
+            session.del_cookie(handler)
+
         session.state = "logout"
 
     def replace_data(self, src, dst):
@@ -529,7 +545,10 @@ class PagesLogin(Pages):
 
         if action == "logout":
             try:
-                handler.config.auth.end_session(handler.session)
+                handler.config.auth.end_session(
+                    handler.session,
+                    handler=handler
+                )
             except KeyError:
                 handler.session.state = "bad"
 

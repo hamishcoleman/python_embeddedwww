@@ -95,7 +95,7 @@ class PagesLogout(hc.http.WebSite.Pages):
     need_auth = True
 
     def do_GET(self, handler):
-        handler.config.auth.end_session(handler.session)
+        handler.config.auth.end_session(handler.session, handler=handler)
         handler.send_header("Location", "/login")
         # TODO: hardcodes the location of login
         handler.send_error(HTTPStatus.SEE_OTHER)
