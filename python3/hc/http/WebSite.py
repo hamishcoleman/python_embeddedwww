@@ -1,6 +1,9 @@
 import base64
+import hashlib
 import hc.html.Widget
+import hmac
 import http.server
+import json
 import shutil
 import time
 import urllib.parse
@@ -20,6 +23,49 @@ def _encoded_uuid():
     random = uuid.uuid4().bytes
     data = base64.urlsafe_b64encode(random).strip(b"=").decode("utf8")
     return data
+
+
+def _decode_b64(data):
+    # Just give me a b64decode that ignores the padding, kthx:wq
+    return base64.urlsafe_b64decode(data + b"===")
+
+
+def _encode_jsonb64(data):
+    return base64.urlsafe_b64encode(
+        json.dumps(
+            data,
+            separators=(",", ":")
+        ).encode("ascii")
+    ).rstrip(b"=")
+
+
+def _data2simplejwt(secret, data):
+    header = {
+        "alg": "HS256",
+        "typ": "JWT",
+    }
+    header_enc = _encode_jsonb64(header)
+    data_enc = _encode_jsonb64(data)
+    sig = hmac.digest(secret, header_enc + b"." + data_enc, hashlib.sha256)
+    sig_enc = base64.urlsafe_b64encode(sig).rstrip(b"=")
+    return header_enc + b"." + data_enc + b"." + sig_enc
+
+
+def _simplejwt2data(secret, jwt):
+    header_enc, data_enc, sig_enc = jwt.split(b".")
+    header = json.loads(_decode_b64(header_enc))
+    if header["typ"] != "JWT":
+        raise ValueError("unexpected jwt typ")
+    if header["alg"] != "HS256":
+        raise ValueError("unexpected jwt alg")
+
+    sig1 = _decode_b64(sig_enc)
+    sig2 = hmac.digest(secret, header_enc + b"." + data_enc, hashlib.sha256)
+
+    if sig1 != sig2:
+        raise ValueError("Failed jwt validation")
+
+    return json.loads(_decode_b64(data_enc))
 
 
 class TBF:
@@ -159,6 +205,7 @@ class AuthenticatorBase:
 class AuthenticatorTest(AuthenticatorBase):
     def __init__(self):
         self.sessions = {}
+        self.secret = b"secret"
         # TODO: param to load auth table
 
     def _get_user_db(self, user, password):
@@ -190,15 +237,13 @@ class AuthenticatorTest(AuthenticatorBase):
         data["user"] = user
         data["createdat"] = time.time()
 
-        # We enforce that the session data is readonly as that will allow
-        # the use of JWT (or similar) to populate the session data
-        data = MappingProxyType(data)
         return data
 
     def end_session(self, session):
         if session is None:
             return
         del self.sessions[session.id]
+        # TODO: del cookie?
         session.state = "logout"
 
     def replace_data(self, src, dst):
@@ -209,11 +254,25 @@ class AuthenticatorTest(AuthenticatorBase):
         if session.id and session.data is None:
             # The session could be created - but not populated - from the
             # request, so we try to populate it
+
+            # First, try our RAM session cache
             try:
                 session.data = self.sessions[session.id]
                 session.state = "login"
             except KeyError:
-                session.state = "logout"
+                # then try decoding jwt
+                try:
+                    session.data = _simplejwt2data(
+                        self.secret,
+                        session.id.encode("ascii")
+                    )
+
+                    # Cache the readonly version
+                    self.sessions[session.id] = MappingProxyType(session.data)
+
+                    session.state = "login"
+                except ValueError:
+                    session.state = "logout"
         return session
 
     def login2session(self, response, user, password):
@@ -224,9 +283,12 @@ class AuthenticatorTest(AuthenticatorBase):
             return session
         session.state = "login"
 
-        session.id = _encoded_uuid()
+        session.id = _data2simplejwt(self.secret, data).decode("ascii")
         session.data = data
-        self.sessions[session.id] = session.data
+
+        # We enforce that the session data is readonly as that will allow
+        # the use of JWT (or similar) to populate the session data
+        self.sessions[session.id] = MappingProxyType(session.data)
 
         session.to_response(response)
 
