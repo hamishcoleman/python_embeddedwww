@@ -1,3 +1,5 @@
+from types import MappingProxyType
+
 
 class DefaultHead:
     def __init__(self):
@@ -72,7 +74,7 @@ class DefaultTable:
                 if column is None:
                     val = k
                 else:
-                    if isinstance(row, dict):
+                    if isinstance(row, (dict, MappingProxyType)):
                         val = row[column]
                     else:
                         val = row
