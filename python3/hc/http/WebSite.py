@@ -225,6 +225,7 @@ class AuthenticatorTest(AuthenticatorBase):
         # TODO:
         # - lookup user/password in auth table
         # - construct data from auth table details
+        # - use fields that look more like JWT
 
         fake_user = {
             "admin": {
