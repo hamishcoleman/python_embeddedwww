@@ -94,10 +94,14 @@ class Session:
 
     def to_response(self, response):
         # Persist the session in the browser
+        #
+        # TODO: if client made request using SSL, then the cookie should be
+        # set to Secure as well
         response.send_cookie(
             "sessionid",
             self.id,
-            SameSite="Lax",
+            SameSite="Strict",
+            HttpOnly=None,
             Path="/",
         )
 
