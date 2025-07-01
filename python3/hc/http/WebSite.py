@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import hc.html.Widget
+import hc.http.TBF
 import hmac
 import http.server
 import json
@@ -66,39 +67,6 @@ def _simplejwt2data(secret, jwt):
         raise ValueError("Failed jwt validation")
 
     return json.loads(_decode_b64(data_enc))
-
-
-class TBF:
-    def __init__(self, rate_per_sec, burst_size):
-        self.rate_per_sec = rate_per_sec
-        self.burst_size = burst_size
-        self.tokens = burst_size
-        self.last_add = int(time.time())
-
-    def _withdraw(self, tokens):
-        if self.tokens > tokens:
-            self.tokens -= tokens
-            return True
-        return False
-
-    def _check_add(self, now):
-        elapsed = now - self.last_add
-        if elapsed < 1:
-            return
-
-        tokens = self.tokens + elapsed * self.rate_per_sec
-        if tokens > self.burst_size:
-            tokens = self.burst_size
-
-        self.tokens = tokens
-        self.last_add = now
-
-    def withdraw(self, tokens):
-        if self._withdraw(tokens):
-            return True
-
-        self._check_add(time.time())
-        return self._withdraw(tokens)
 
 
 class Session:
@@ -318,7 +286,7 @@ class Pages:
     def __init__(self):
         self.request = 0
         self.elapsed = float()
-        self.tbf = TBF(1, 10)
+        self.tbf = hc.html.TBF.Filter(1, 10)
 
 
 class PagesMetrics(Pages):
