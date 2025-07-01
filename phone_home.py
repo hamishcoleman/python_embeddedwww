@@ -21,6 +21,7 @@ sys.path.insert(
 )
 
 
+import hc.http.Pages    # noqa: E402
 import hc.http.WebSite  # noqa: E402
 import hc.http.sqlite   # noqa: E402
 
@@ -48,7 +49,7 @@ def argparser():
     return args
 
 
-class PagesPhoneHome(hc.http.WebSite.Pages):
+class PagesPhoneHome(hc.http.Pages.Base):
     def __init__(self, data):
         self.data = data
         super().__init__()
@@ -172,19 +173,19 @@ def main():
         config.auth = hc.http.WebSite.AuthenticatorTest()
 
     config.routes = {
-        "/auth/login": hc.http.WebSite.PagesLogin(),
-        "/auth/list": hc.http.WebSite.PagesAuthList(),
-        "/metrics": hc.http.WebSite.PagesMetrics(),
-        "/sitemap": hc.http.WebSite.PagesMap(),
-        "/style.css": hc.http.WebSite.PagesStatic(
+        "/auth/login": hc.http.Pages.Login(),
+        "/auth/list": hc.http.Pages.AuthList(),
+        "/metrics": hc.http.Pages.Metrics(),
+        "/sitemap": hc.http.Pages.SiteMap(),
+        "/style.css": hc.http.Pages.Static(
             style,
             content_type="text/css; charset=utf-8",
         ),
-        "/static/sortable.js": hc.http.WebSite.PagesStaticFile(
+        "/static/sortable.js": hc.http.Pages.StaticFile(
             "static/sortable.js",
             content_type="application/javascript; charset=utf-8",
         ),
-        "/static/sortable.css": hc.http.WebSite.PagesStaticFile(
+        "/static/sortable.css": hc.http.Pages.StaticFile(
             "static/sortable.css",
             content_type="text/css; charset=utf-8",
         ),

@@ -20,6 +20,7 @@ sys.path.insert(
 
 
 import hc.html.Widget   # noqa: E402
+import hc.http.Pages    # noqa: E402
 import hc.http.WebSite  # noqa: E402
 
 
@@ -52,7 +53,7 @@ class Widget(hc.html.Widget.Default):
             'name="viewport" content="width=device-width, initial-scale=1"',
             'http-equiv="Content-Type" content="text/html; charset=utf-8"',
         ]
-        obj.stylesheets += ["/static/style.css"]
+        obj.stylesheets.add("/static/style.css")
         return obj
 
     @classmethod
@@ -91,7 +92,7 @@ class RequestHandler(hc.http.WebSite.RequestHandler):
         self.render_page()
 
 
-class PagesLogout(hc.http.WebSite.Pages):
+class PagesLogout(hc.http.Pages.Base):
     need_auth = True
 
     def do_GET(self, handler):
@@ -101,7 +102,7 @@ class PagesLogout(hc.http.WebSite.Pages):
         handler.send_error(HTTPStatus.SEE_OTHER)
 
 
-class PagesAccount(hc.http.WebSite.Pages):
+class PagesAccount(hc.http.Pages.Base):
     need_auth = True
 
     def do_GET(self, handler):
@@ -197,7 +198,7 @@ class PagesAccount(hc.http.WebSite.Pages):
         handler.send_page(HTTPStatus.OK, data)
 
 
-class PagesPayment(hc.http.WebSite.Pages):
+class PagesPayment(hc.http.Pages.Base):
     need_auth = True
 
     def do_POST(self, handler):
@@ -231,7 +232,7 @@ class PagesPayment(hc.http.WebSite.Pages):
         handler.send_page(HTTPStatus.OK, data)
 
 
-class PagesPair(hc.http.WebSite.Pages):
+class PagesPair(hc.http.Pages.Base):
     need_auth = True
 
     def do_POST(self, handler):
@@ -264,7 +265,7 @@ class PagesPair(hc.http.WebSite.Pages):
         handler.send_page(HTTPStatus.OK, data)
 
 
-class PagesDoor(hc.http.WebSite.Pages):
+class PagesDoor(hc.http.Pages.Base):
     need_auth = True
 
     def do_POST(self, handler):
@@ -311,7 +312,7 @@ fix it promptly.
         handler.send_page(HTTPStatus.FORBIDDEN, data)
 
 
-class PagesRoot(hc.http.WebSite.Pages):
+class PagesRoot(hc.http.Pages.Base):
     def do_GET(self, handler):
         if not handler.session.has_auth:
             handler.send_header("Location", "/login")
@@ -365,7 +366,7 @@ def main():
     config.auth = hc.http.WebSite.AuthenticatorTest()
     config.routes = {
         "/": PagesRoot(),
-        "/login": hc.http.WebSite.PagesLogin(),
+        "/login": hc.http.Pages.Login(),
         "/logout/": PagesLogout(),
         "/account_actions/": PagesAccount(),
         "/door_open/": PagesDoor(),
@@ -373,18 +374,18 @@ def main():
         "/rfid_pair/": PagesPair(),
         # /password_change/
 
-        "/static/style.css": hc.http.WebSite.PagesStaticFile(
+        "/static/style.css": hc.http.Pages.StaticFile(
             "static/hackman.css",
             content_type="text/css; charset=utf-8",
         ),
-        "/static/dsl_logo.svg": hc.http.WebSite.PagesStatic(
+        "/static/dsl_logo.svg": hc.http.Pages.Static(
             "static/dsl_logo.svg",
             content_type="image/svg+xml",
         ),
 
-        "/auth/list": hc.http.WebSite.PagesAuthList(),
-        "/metrics": hc.http.WebSite.PagesMetrics(),
-        "/sitemap": hc.http.WebSite.PagesMap(),
+        "/auth/list": hc.http.Pages.AuthList(),
+        "/metrics": hc.http.Pages.Metrics(),
+        "/sitemap": hc.http.Pages.SiteMap(),
     }
 
     if hasattr(signal, 'SIGPIPE'):

@@ -69,7 +69,7 @@ def _tuple2desc(server, client):
     return desc
 
 
-class PagesLogin(hc.http.WebSite.PagesLogin):
+class PagesLogin(hc.http.Pages.Login):
     def set_attribs(self, handler):
         # Add our custom fields to the login page
 
@@ -81,7 +81,7 @@ class PagesLogin(hc.http.WebSite.PagesLogin):
         super().set_attribs(handler)
 
 
-class PagesQuery(hc.http.WebSite.Pages):
+class PagesQuery(hc.http.Pages.Base):
     def __init__(self, data):
         self.queries = data
         super().__init__()
@@ -179,7 +179,7 @@ class PagesQuery(hc.http.WebSite.Pages):
         handler.send_page(HTTPStatus.OK, data)
 
 
-class PagesQueryAnswer(hc.http.WebSite.Pages):
+class PagesQueryAnswer(hc.http.Pages.Base):
     def __init__(self, data, kv):
         self.queries = data
         self.kv = kv
@@ -213,7 +213,7 @@ class PagesQueryAnswer(hc.http.WebSite.Pages):
         handler.send_page(HTTPStatus.OK, answer)
 
 
-class PagesChat(hc.http.WebSite.Pages):
+class PagesChat(hc.http.Pages.Base):
     need_auth = True
 
     def __init__(self, chat_data):
@@ -341,22 +341,22 @@ def main():
     config.auth = hc.http.WebSite.AuthenticatorTest()
     config.routes = {
         "/auth/login": PagesLogin(),
-        "/auth/list": hc.http.WebSite.PagesAuthList(),
+        "/auth/list": hc.http.Pages.AuthList(),
         "/kv": hc.http.Pages.KV(data_kv),
-        "/metrics": hc.http.WebSite.PagesMetrics(),
+        "/metrics": hc.http.Pages.Metrics(),
         "/q": PagesQuery(data_query),
-        "/sitemap": hc.http.WebSite.PagesMap(),
+        "/sitemap": hc.http.Pages.SiteMap(),
         "/test/notes": PagesChat(data_chat),
-        "/test/page": hc.http.WebSite.PagesStatic("A Testable Page"),
-        "/style.css": hc.http.WebSite.PagesStatic(
+        "/test/page": hc.http.Pages.Static("A Testable Page"),
+        "/style.css": hc.http.Pages.Static(
             style,
             content_type="text/css",
         ),
-        "/static/sortable.js": hc.http.WebSite.PagesStaticFile(
+        "/static/sortable.js": hc.http.Pages.StaticFile(
             "static/sortable.js",
             content_type="application/javascript; charset=utf-8",
         ),
-        "/static/sortable.css": hc.http.WebSite.PagesStaticFile(
+        "/static/sortable.css": hc.http.Pages.StaticFile(
             "static/sortable.css",
             content_type="text/css; charset=utf-8",
         ),
