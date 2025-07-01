@@ -21,6 +21,7 @@ sys.path.insert(
 )
 
 
+import hc.http.Auth     # noqa: E402
 import hc.http.Pages    # noqa: E402
 import hc.http.WebSite  # noqa: E402
 import hc.http.sqlite   # noqa: E402
@@ -170,7 +171,7 @@ def main():
     if args.db:
         config.auth = hc.http.sqlite.Authenticator(args.db)
     else:
-        config.auth = hc.http.WebSite.AuthenticatorTest()
+        config.auth = hc.http.Auth.Test()
 
     config.routes = {
         "/auth/login": hc.http.Pages.Login(),

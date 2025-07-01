@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import hc.http.Auth
 import hc.http.WebSite
 import sqlite3
 import time
@@ -7,7 +8,7 @@ import time
 from types import MappingProxyType
 
 
-class Authenticator(hc.http.WebSite.AuthenticatorBase):
+class Authenticator(hc.http.Auth.Base):
     def __init__(self, dbfile):
         self.sessions = {}  # A ram cache
         self.con = sqlite3.connect(dbfile)
@@ -65,7 +66,7 @@ class Authenticator(hc.http.WebSite.AuthenticatorBase):
         self.sessions[dst.id] = self.sessions[src.id]
 
     def request2session(self, request):
-        session = hc.http.WebSite.Session.from_request(request)
+        session = hc.http.Auth.Session.from_request(request)
         if session.id and session.data is None:
             # The session could be created - but not populated - from the
             # request, so we try to populate it
@@ -77,7 +78,7 @@ class Authenticator(hc.http.WebSite.AuthenticatorBase):
         return session
 
     def login2session(self, response, user, password):
-        session = hc.http.WebSite.Session()
+        session = hc.http.Auth.Session()
         data = self._get_user_db(user, password)
         if data is None:
             session.state = "bad"

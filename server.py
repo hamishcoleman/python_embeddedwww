@@ -26,6 +26,7 @@ sys.path.insert(
 )
 
 
+import hc.http.Auth  # noqa: E402
 import hc.http.Pages  # noqa: E402
 import hc.http.WebSite  # noqa: E402
 
@@ -338,7 +339,7 @@ def main():
 
     config = SimpleSiteConfig()
     config.cookie_domain = args.cookie_domain
-    config.auth = hc.http.WebSite.AuthenticatorTest()
+    config.auth = hc.http.Auth.Test()
     config.routes = {
         "/auth/login": PagesLogin(),
         "/auth/list": hc.http.Pages.AuthList(),

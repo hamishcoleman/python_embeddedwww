@@ -2,7 +2,7 @@
 Provide useful implementations for some simple pages.
 """
 
-import hc.http.WebSite
+import hc.http.Auth
 import shutil
 import urllib
 
@@ -321,7 +321,7 @@ class AuthList(Base):
         action = form[b"a"][0].decode("utf8")
 
         action, action_id = action.split("/")
-        action_session = hc.http.WebSite.Session()
+        action_session = hc.http.Auth.Session()
         action_session.id = action_id
 
         if action == "del":

@@ -20,6 +20,7 @@ sys.path.insert(
 
 
 import hc.html.Widget   # noqa: E402
+import hc.http.Auth     # noqa: E402
 import hc.http.Pages    # noqa: E402
 import hc.http.WebSite  # noqa: E402
 
@@ -363,7 +364,7 @@ def main():
 
     config = hc.http.WebSite.Config()
     config.Widget = Widget
-    config.auth = hc.http.WebSite.AuthenticatorTest()
+    config.auth = hc.http.Auth.Test()
     config.routes = {
         "/": PagesRoot(),
         "/login": hc.http.Pages.Login(),
