@@ -73,7 +73,7 @@ class KV(Base):
 
     def do_POST(self, handler):
         form = handler.get_formdata()
-        action = form[b"a"][0].decode("utf8")
+        action = form[b"_action"][0].decode("utf8")
 
         if action == "add":
             try:
@@ -82,13 +82,13 @@ class KV(Base):
                 self.data[k] = v
             except KeyError:
                 pass
-        elif action.startswith("del/"):
-            _, action_id = action.split("/")
-            del self.data[action_id]
-        elif action.startswith("edit/"):
-            _, action_id = action.split("/")
-            action_id = urllib.parse.quote(action_id)
-            handler.send_header("Location", f"{handler.path}/{action_id}")
+        elif action == "del":
+            row = form[b"_row"][0].decode("utf8")
+            del self.data[row]
+        elif action == "edit":
+            row = form[b"_row"][0].decode("utf8")
+            row = urllib.parse.quote(row)
+            handler.send_header("Location", f"{handler.path}/{row}")
             handler.send_error(HTTPStatus.SEE_OTHER)
             return
         else:
@@ -109,11 +109,9 @@ class KV(Base):
          <form method="post">
           <input type="text" name="key" placeholder="key" autofocus>
           <input type="text" name="val" placeholder="val">
-          <button name="a" value="add">add</button>
+          <button name="_action" value="add">add</button>
          </form>
         """]
-
-        data += ['<form id="action" method="post"></form>']
 
         table = handler.config.Widget.table()
         table.data = self.data
@@ -318,11 +316,11 @@ class AuthList(Base):
 
     def do_POST(self, handler):
         form = handler.get_formdata()
-        action = form[b"a"][0].decode("utf8")
+        action = form[b"_action"][0].decode("utf8")
+        row = form[b"_row"][0].decode("utf8")
 
-        action, action_id = action.split("/")
         action_session = hc.http.Auth.Session()
-        action_session.id = action_id
+        action_session.id = row
 
         if action == "del":
             handler.config.auth.end_session(action_session)
@@ -347,8 +345,6 @@ class AuthList(Base):
         data += [head]
         data += ["<body>"]
         data += handler.config.Widget.navbar()
-
-        data += ['<form id="action" method="post"></form>']
 
         table = handler.config.Widget.table()
         table.caption = "Sessions List"

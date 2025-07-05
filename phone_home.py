@@ -58,16 +58,16 @@ class PagesPhoneHome(hc.http.Pages.Base):
     def do_POST(self, handler):
         form = handler.get_formdata()
 
-        if b"a" in form:
+        if b"_action" in form:
             if not handler.session.has_auth:
                 handler.send_error(HTTPStatus.UNAUTHORIZED)
                 return
 
-            action = form[b"a"][0].decode("utf8")
-            cmd, action_id = action.split("/")
+            action = form[b"_action"][0].decode("utf8")
+            row = form[b"_row"][0].decode("utf8")
 
-            if cmd == "del":
-                del self.data[action_id]
+            if action == "del":
+                del self.data[row]
             else:
                 handler.send_error(HTTPStatus.BAD_REQUEST)
                 return
@@ -108,11 +108,6 @@ class PagesPhoneHome(hc.http.Pages.Base):
         if not handler.session.has_auth:
             handler.send_error(HTTPStatus.UNAUTHORIZED)
             return
-
-        data += ["""
-         <form id="action" method="post">
-         </form>
-        """]
 
         table = handler.config.Widget.table()
         table.style = "sortable"

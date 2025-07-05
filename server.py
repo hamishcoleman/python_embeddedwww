@@ -110,22 +110,22 @@ class PagesQuery(hc.http.Pages.Base):
             handler.send_page(HTTPStatus.CREATED, str(_id))
             return
 
-        if b"a" in form:
+        if b"_action" in form:
             if not handler.session.has_auth:
                 handler.send_error(HTTPStatus.UNAUTHORIZED)
                 return
 
-            action = form[b"a"][0].decode("utf8")
-            cmd, action_id = action.split("/")
+            action = form[b"_action"][0].decode("utf8")
+            row = form[b"_row"][0].decode("utf8")
 
-            if cmd == "del":
-                del self.queries[action_id]
-            elif cmd == "allow":
-                self.queries[action_id]["a"] = True
-            elif cmd == "deny":
-                self.queries[action_id]["a"] = False
-            elif cmd == "edit":
-                q_safe = urllib.parse.quote(self.queries[action_id]["q"])
+            if action == "del":
+                del self.queries[row]
+            elif action == "allow":
+                self.queries[row]["a"] = True
+            elif action == "deny":
+                self.queries[row]["a"] = False
+            elif action == "edit":
+                q_safe = urllib.parse.quote(self.queries[row]["q"])
                 handler.send_header("Location", f"/kv/{q_safe}")
                 # TODO: hardcodes the location of kv
                 handler.send_error(HTTPStatus.SEE_OTHER)
@@ -154,10 +154,6 @@ class PagesQuery(hc.http.Pages.Base):
         """]
 
         if handler.session.has_auth:
-            data += ["""
-             <form id="action" method="post"></form>
-            """]
-
             table = handler.config.Widget.table()
             table.style = "sortable"
             table.data = self.queries

@@ -82,11 +82,15 @@ class DefaultTable:
 
             if self.actions:
                 r += ["<td>"]
+                r += ["<form method=post>"]
+                r += [f'<input type=hidden name=_row value="{k}"/>']
                 for action in self.actions:
                     r += [
-                        '<button form="action" name="a" ',
-                        f'value="{action}/{k}">{action}</button>',
+                        f'<button name="_action" value="{action}">',
+                        action,
+                        '</button>',
                     ]
+                r += ["</form>"]
             r += ["</tr>\n"]
 
         r += ["""
