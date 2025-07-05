@@ -64,39 +64,46 @@ class StaticFile(Base):
             shutil.copyfileobj(f, handler.wfile)
 
 
-class KV(Base):
+class SimpleForm(Base):
+    def do_POST(self, handler):
+        form = handler.get_formdata()
+        action = form[b"_action"][0].decode("utf8")
+
+        action_method_name = 'form_' + action
+        if not hasattr(self, action_method_name):
+            handler.send_error(HTTPStatus.NOT_IMPLEMENTED)
+            return
+        action_handler = getattr(self, action_method_name)
+        action_handler(handler, form)
+
+
+class KV(SimpleForm):
     need_auth = True
 
     def __init__(self, data):
         self.data = data
         super().__init__()
 
-    def do_POST(self, handler):
-        form = handler.get_formdata()
-        action = form[b"_action"][0].decode("utf8")
+    def form_add(self, handler, form):
+        k = form[b"key"][0].decode("utf8")
+        v = form[b"val"][0].decode("utf8")
+        self.data[k] = v
 
-        if action == "add":
-            try:
-                k = form[b"key"][0].decode("utf8")
-                v = form[b"val"][0].decode("utf8")
-                self.data[k] = v
-            except KeyError:
-                pass
-        elif action == "del":
-            row = form[b"_row"][0].decode("utf8")
-            del self.data[row]
-        elif action == "edit":
-            row = form[b"_row"][0].decode("utf8")
-            row = urllib.parse.quote(row)
-            handler.send_header("Location", f"{handler.path}/{row}")
-            handler.send_error(HTTPStatus.SEE_OTHER)
-            return
-        else:
-            handler.send_error(HTTPStatus.BAD_REQUEST)
-            return
+        handler.send_header("Location", f"{handler.path}")
+        handler.send_error(HTTPStatus.SEE_OTHER)
 
-        # TODO: refactor to never chain
-        return self.do_GET(handler)
+    def form_del(self, handler, form):
+        row = form[b"_row"][0].decode("utf8")
+        del self.data[row]
+
+        handler.send_header("Location", f"{handler.path}")
+        handler.send_error(HTTPStatus.SEE_OTHER)
+
+    def form_edit(self, handler, form):
+        row = form[b"_row"][0].decode("utf8")
+        row = urllib.parse.quote(row)
+        handler.send_header("Location", f"{handler.path}/{row}")
+        handler.send_error(HTTPStatus.SEE_OTHER)
 
     def do_GET(self, handler):
         data = []
@@ -204,7 +211,7 @@ class SiteMap(Base):
         handler.send_page(HTTPStatus.OK, data)
 
 
-class Login(Base):
+class Login(SimpleForm):
     def __init__(self):
         super().__init__()
         self.attribs = {}
@@ -219,34 +226,17 @@ class Login(Base):
         self.attribs["Host"] = handler.headers["Host"]
         self.attribs["Username"] = handler.session.user
 
-    def do_POST(self, handler):
-        form = handler.get_formdata()
-        action = form[b"a"][0].decode("utf8")
-
-        if action == "logout":
-            try:
-                handler.config.auth.end_session(
-                    handler.session,
-                    handler=handler
-                )
-            except KeyError:
-                handler.session.state = "bad"
-
-        if action == "login":
-            user = form[b"user"][0].decode("utf8")
-            password = form[b"pass"][0].decode("utf8")
-            handler.config.auth.login2session(
-                handler,
-                user,
-                password
-            )
-
-        # TODO: show something to tell user they have a bad login
-
-        # Make reloading nicer
+    def form_logout(self, handler, form):
+        handler.config.auth.end_session(handler.session, handler=handler)
         handler.send_header("Location", handler.path)
         handler.send_error(HTTPStatus.SEE_OTHER)
-        return
+
+    def form_login(self, handler, form):
+        user = form[b"user"][0].decode("utf8")
+        password = form[b"pass"][0].decode("utf8")
+        handler.config.auth.login2session(handler, user, password)
+        handler.send_header("Location", handler.path)
+        handler.send_error(HTTPStatus.SEE_OTHER)
 
     def do_GET(self, handler):
         self.set_attribs(handler)
@@ -276,7 +266,8 @@ class Login(Base):
             <tr>
             <tr>
              <th>
-             <td align=right><button name="a" value="logout">Logout</button>
+             <td align=right>
+              <button name="_action" value="logout">Logout</button>
             """]
         else:
             data += ["""
@@ -288,7 +279,8 @@ class Login(Base):
              <td><input type="password" id="pass" name="pass" required>
             <tr>
              <th>
-             <td align=right><button name="a" value="login">Login</button>
+             <td align=right>
+              <button name="_action" value="login">Login</button>
             """]
 
         if handler.session.state == "bad":
@@ -310,33 +302,28 @@ class Login(Base):
         handler.send_page(code, data)
 
 
-class AuthList(Base):
+class AuthList(SimpleForm):
     need_auth = True
     need_admin = True
 
-    def do_POST(self, handler):
-        form = handler.get_formdata()
-        action = form[b"_action"][0].decode("utf8")
+    def form_del(self, handler, form):
         row = form[b"_row"][0].decode("utf8")
-
         action_session = hc.http.Auth.Session()
         action_session.id = row
+        handler.config.auth.end_session(action_session, handler=handler)
 
-        if action == "del":
-            handler.config.auth.end_session(action_session)
-            handler.send_header("Location", handler.path)
-            handler.send_error(HTTPStatus.SEE_OTHER)
-            return
-        elif action == "clone":
-            handler.config.auth.replace_data(action_session, self.session)
+        handler.send_header("Location", handler.path)
+        handler.send_error(HTTPStatus.SEE_OTHER)
 
-            # TODO: hardcodes the location of this page
-            handler.send_header("Location", "login")
-            handler.send_error(HTTPStatus.SEE_OTHER)
-            return
-        else:
-            handler.send_error(HTTPStatus.BAD_REQUEST)
-            return
+    def form_clone(self, handler, form):
+        row = form[b"_row"][0].decode("utf8")
+        action_session = hc.http.Auth.Session()
+        action_session.id = row
+        handler.config.auth.replace_data(action_session, handler.session)
+
+        # TODO: hardcodes the location of this page
+        handler.send_header("Location", "login")
+        handler.send_error(HTTPStatus.SEE_OTHER)
 
     def do_GET(self, handler):
         data = []

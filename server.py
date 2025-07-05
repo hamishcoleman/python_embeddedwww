@@ -46,7 +46,6 @@ def _tuple2pid(server, client):
 
     # TODO: there could be multiple owners...
     pid_kv = process_text.split(",")[1]
-    print("D", pid_kv)
     pid_str = pid_kv.split("=")[1]
 
     # Its an int, but we will just use it as a string in an open
@@ -82,62 +81,86 @@ class PagesLogin(hc.http.Pages.Login):
         super().set_attribs(handler)
 
 
-class PagesQuery(hc.http.Pages.Base):
+class PagesQuery(hc.http.Pages.SimpleForm):
     def __init__(self, data):
         self.queries = data
         super().__init__()
 
+    def form_query(self, handler, form):
+        query = form[b"q"][0].decode("utf8")
+
+        # FIXME: better id
+        _id = hc.http.WebSite._encoded_uuid()
+        describe = _tuple2desc(
+            handler.server.server_address,
+            handler.client_address,
+        )
+        self.queries[_id] = {
+            "a": None,
+            "h": handler.headers["Host"],
+            "q": query,
+            "t": handler.time_start,
+            "desc": describe,
+        }
+        handler.send_header("Location", f"{handler.path}/{_id}")
+        handler.send_page(HTTPStatus.CREATED, str(_id))
+
+    def form_del(self, handler, form):
+        row = form[b"_row"][0].decode("utf8")
+        del self.queries[row]
+        handler.send_header("Location", handler.path)
+        handler.send_error(HTTPStatus.SEE_OTHER)
+
+    def form_allow(self, handler, form):
+        row = form[b"_row"][0].decode("utf8")
+        self.queries[row]["a"] = True
+        handler.send_header("Location", handler.path)
+        handler.send_error(HTTPStatus.SEE_OTHER)
+
+    def form_deny(self, handler, form):
+        row = form[b"_row"][0].decode("utf8")
+        self.queries[row]["a"] = False
+        handler.send_header("Location", handler.path)
+        handler.send_error(HTTPStatus.SEE_OTHER)
+
+    def form_edit(self, handler, form):
+        row = form[b"_row"][0].decode("utf8")
+        print("D:row", row)
+        print("D:queries", self.queries)
+        q_safe = urllib.parse.quote(self.queries[row]["q"])
+        print("D", q_safe, handler.path)
+        handler.send_header("Location", f"/kv/{q_safe}")
+        # TODO: hardcodes the location of kv
+        handler.send_error(HTTPStatus.SEE_OTHER)
+
     def do_POST(self, handler):
         form = handler.get_formdata()
-
-        if b"q" in form:
-            query = form[b"q"][0].decode("utf8")
-
-            # FIXME: better id
-            _id = hc.http.WebSite._encoded_uuid()
-            describe = _tuple2desc(
-                handler.server.server_address,
-                handler.client_address,
-            )
-            self.queries[_id] = {
-                "a": None,
-                "h": handler.headers["Host"],
-                "q": query,
-                "t": handler.time_start,
-                "desc": describe,
-            }
-            handler.send_header("Location", f"{handler.path}/{_id}")
-            handler.send_page(HTTPStatus.CREATED, str(_id))
-            return
-
-        if b"_action" in form:
-            if not handler.session.has_auth:
-                handler.send_error(HTTPStatus.UNAUTHORIZED)
-                return
-
+        try:
             action = form[b"_action"][0].decode("utf8")
-            row = form[b"_row"][0].decode("utf8")
+        except KeyError:
+            # Default
+            action = "query"
 
-            if action == "del":
-                del self.queries[row]
-            elif action == "allow":
-                self.queries[row]["a"] = True
-            elif action == "deny":
-                self.queries[row]["a"] = False
-            elif action == "edit":
-                q_safe = urllib.parse.quote(self.queries[row]["q"])
-                handler.send_header("Location", f"/kv/{q_safe}")
-                # TODO: hardcodes the location of kv
-                handler.send_error(HTTPStatus.SEE_OTHER)
-                return
-            else:
-                handler.send_error(HTTPStatus.BAD_REQUEST)
-                return
+        if action == "query":
+            return self.form_query(handler, form)
 
-            # Make refreshing nicer
-            handler.send_header("Location", handler.path)
-            handler.send_error(HTTPStatus.SEE_OTHER)
+        if not handler.session.has_auth:
+            handler.send_error(HTTPStatus.UNAUTHORIZED)
             return
+
+        if action == "del":
+            return self.form_del(handler, form)
+
+        if action == "allow":
+            return self.form_allow(handler, form)
+
+        if action == "deny":
+            return self.form_deny(handler, form)
+
+        if action == "edit":
+            return self.form_edit(handler, form)
+
+        handler.send_error(HTTPStatus.BAD_REQUEST)
 
     def do_GET(self, handler):
         data = []
@@ -149,7 +172,7 @@ class PagesQuery(hc.http.Pages.Base):
         data += ["""
          <form method="post">
           <input type="text" name="q" required autofocus>
-          <button name="qq" value="query">query</button>
+          <button name="_action" value="query">query</button>
          </form>
         """]
 

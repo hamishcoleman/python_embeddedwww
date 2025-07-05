@@ -55,6 +55,12 @@ class PagesPhoneHome(hc.http.Pages.Base):
         self.data = data
         super().__init__()
 
+    def form_del(self, handler, form):
+        row = form[b"_row"][0].decode("utf8")
+        del self.data[row]
+        handler.send_header("Location", handler.path)
+        handler.send_error(HTTPStatus.SEE_OTHER)
+
     def do_POST(self, handler):
         form = handler.get_formdata()
 
@@ -64,18 +70,12 @@ class PagesPhoneHome(hc.http.Pages.Base):
                 return
 
             action = form[b"_action"][0].decode("utf8")
-            row = form[b"_row"][0].decode("utf8")
 
             if action == "del":
-                del self.data[row]
+                return self.form_del(handler, form)
             else:
                 handler.send_error(HTTPStatus.BAD_REQUEST)
                 return
-
-            # Make refreshing nicer
-            handler.send_header("Location", handler.path)
-            handler.send_error(HTTPStatus.SEE_OTHER)
-            return
 
         if len(self.data) > 100:
             # prevent a memory exhaustion attack
