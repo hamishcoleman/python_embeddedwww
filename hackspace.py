@@ -203,7 +203,7 @@ class PagesPayment(hc.http.Pages.Base):
     need_auth = True
 
     def do_POST(self, handler):
-        form = handler.get_formdata()
+        form = handler.form
         year_month = form[b"year_month"][0].decode("utf8")
 
         # TODO:
@@ -237,7 +237,7 @@ class PagesPair(hc.http.Pages.Base):
     need_auth = True
 
     def do_POST(self, handler):
-        form = handler.get_formdata()
+        form = handler.form
         card_id = form[b"card_id"][0].decode("utf8")
 
         # TODO:

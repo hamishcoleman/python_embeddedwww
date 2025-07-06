@@ -62,7 +62,7 @@ class PagesPhoneHome(hc.http.Pages.Base):
         handler.send_error(HTTPStatus.SEE_OTHER)
 
     def do_POST(self, handler):
-        form = handler.get_formdata()
+        form = handler.form
 
         if b"_action" in form:
             if not handler.session.has_auth:

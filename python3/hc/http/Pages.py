@@ -66,7 +66,7 @@ class StaticFile(Base):
 
 class SimpleForm(Base):
     def do_POST(self, handler):
-        form = handler.get_formdata()
+        form = handler.form
         action = form[b"_action"][0].decode("utf8")
 
         action_method_name = 'form_' + action
@@ -152,7 +152,7 @@ class KVEdit(Base):
 
         key = urllib.parse.unquote(key)
 
-        form = handler.get_formdata()
+        form = handler.form
         val = form[b"val"][0].decode("utf8")
         self.kv[key] = val
         handler.send_header("Location", f"/{path}")

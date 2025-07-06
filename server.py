@@ -134,7 +134,7 @@ class PagesQuery(hc.http.Pages.SimpleForm):
         handler.send_error(HTTPStatus.SEE_OTHER)
 
     def do_POST(self, handler):
-        form = handler.get_formdata()
+        form = handler.form
         try:
             action = form[b"_action"][0].decode("utf8")
         except KeyError:
@@ -241,7 +241,7 @@ class PagesChat(hc.http.Pages.Base):
         super().__init__()
 
     def do_POST(self, handler):
-        form = handler.get_formdata()
+        form = handler.form
         chat = form[b"chat"][0].decode("utf8")
         note = handler.session.user + ":" + chat
         self.chat.append(note)

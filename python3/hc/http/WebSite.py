@@ -43,6 +43,7 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
         # save the config object
         self.config = config
         self.time_start = time.time()
+        self._form = None
         super().__init__(*args, **kwargs)
 
     # The default method happily appends the responce /after/ adding headers,
@@ -71,15 +72,20 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
         value = self.headers.get_param(name, header="Cookie")
         return value
 
-    def get_formdata(self):
+    @property
+    def form(self):
+        if self._form is not None:
+            # we have already loaded the form, so return that
+            return self._form
+
         if self.command != "POST":
             # No post data can exist
             return {}
 
         length = int(self.headers['Content-Length'])
         data = self.rfile.read(length)
-        form = urllib.parse.parse_qs(data)
-        return form
+        self._form = urllib.parse.parse_qs(data)
+        return self._form
 
     def _route2page_obj(self):
         """Returns the object needed to process this page"""
