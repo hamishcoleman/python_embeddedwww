@@ -74,7 +74,7 @@ class Widget(hc.html.Widget.Default):
 """]
         if username:
             r += [f"Logged in as {username}, "]
-            r += ['<a href="/logout/" style="color:white;">Logout</a>']
+            r += ['<a href="/logout" style="color:white;">Logout</a>']
 
         r += ["""
       </table>
@@ -92,15 +92,6 @@ class RequestHandler(hc.http.WebSite.RequestHandler):
 
     def do_POST(self):
         self.render_page()
-
-
-class PagesLogout(hc.http.Pages.Base):
-    need_auth = True
-
-    def do_GET(self, handler):
-        handler.config.auth.end_session(handler.session, handler=handler)
-        handler.send_location("/login")
-        # TODO: hardcodes the location of login
 
 
 class PagesAccount(hc.http.Pages.Base):
@@ -370,7 +361,7 @@ def main():
     config.routes.update({
         "/": PagesRoot(),
         "/login": config.routes["/auth/login"],
-        "/logout/": PagesLogout(),
+        "/logout": config.routes["/auth/logout"],
         "/account_actions/": PagesAccount(),
         "/door_open/": PagesDoor(),
         "/payment_submit/": PagesPayment(),

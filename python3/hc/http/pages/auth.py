@@ -11,6 +11,7 @@ from http import HTTPStatus
 def add_routes(routes):
     """Add the default auth pages with their usual paths"""
     routes["/auth/login"] = Login()
+    routes["/auth/logout"] = Logout()
     routes["/auth/list"] = List()
 
 
@@ -101,6 +102,15 @@ class Login(hc.http.Pages.SimpleForm):
         """]
 
         handler.send_page(code, data)
+
+
+class Logout(hc.http.Pages.Base):
+    need_auth = True
+
+    def do_GET(self, handler):
+        handler.config.auth.end_session(handler.session, handler=handler)
+        handler.send_location("/auth/login")
+        # TODO: hardcodes the location of login
 
 
 class List(hc.http.Pages.SimpleForm):
