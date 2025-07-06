@@ -379,7 +379,7 @@ def main():
             "static/hackman.css",
             content_type="text/css; charset=utf-8",
         ),
-        "/static/dsl_logo.svg": hc.http.Pages.Static(
+        "/static/dsl_logo.svg": hc.http.Pages.StaticFile(
             "static/dsl_logo.svg",
             content_type="image/svg+xml",
         ),
