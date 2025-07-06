@@ -23,6 +23,7 @@ import hc.html.Widget   # noqa: E402
 import hc.http.Auth     # noqa: E402
 import hc.http.Pages    # noqa: E402
 import hc.http.WebSite  # noqa: E402
+import hc.http.pages.auth  # noqa: E402
 
 
 def argparser():
@@ -364,9 +365,11 @@ def main():
     config = hc.http.WebSite.Config()
     config.Widget = Widget
     config.auth = hc.http.Auth.Test()
-    config.routes = {
+
+    hc.http.pages.auth.add_routes(config.routes)
+    config.routes.update({
         "/": PagesRoot(),
-        "/login": hc.http.Pages.Login(),
+        "/login": config.routes["/auth/login"],
         "/logout/": PagesLogout(),
         "/account_actions/": PagesAccount(),
         "/door_open/": PagesDoor(),
@@ -383,10 +386,9 @@ def main():
             content_type="image/svg+xml",
         ),
 
-        "/auth/list": hc.http.Pages.AuthList(),
         "/metrics": hc.http.Pages.Metrics(),
         "/sitemap": hc.http.Pages.SiteMap(),
-    }
+    })
 
     if hasattr(signal, 'SIGPIPE'):
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)

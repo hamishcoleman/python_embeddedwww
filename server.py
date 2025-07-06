@@ -29,6 +29,7 @@ sys.path.insert(
 import hc.http.Auth  # noqa: E402
 import hc.http.Pages  # noqa: E402
 import hc.http.WebSite  # noqa: E402
+import hc.http.pages.auth  # noqa: E402
 
 
 def _tuple2pid(server, client):
@@ -69,7 +70,7 @@ def _tuple2desc(server, client):
     return desc
 
 
-class PagesLogin(hc.http.Pages.Login):
+class PagesLogin(hc.http.pages.auth.Login):
     def set_attribs(self, handler):
         # Add our custom fields to the login page
 
@@ -339,9 +340,11 @@ def main():
     config = SimpleSiteConfig()
     config.cookie_domain = args.cookie_domain
     config.auth = hc.http.Auth.Test()
-    config.routes = {
+
+    hc.http.pages.auth.add_routes(config.routes)
+    config.routes.update({
         "/auth/login": PagesLogin(),
-        "/auth/list": hc.http.Pages.AuthList(),
+
         "/kv": hc.http.Pages.KV(data_kv),
         "/metrics": hc.http.Pages.Metrics(),
         "/q": PagesQuery(data_query),
@@ -360,7 +363,7 @@ def main():
             "static/sortable.css",
             content_type="text/css; charset=utf-8",
         ),
-    }
+    })
     config.routes_subtree = {
         "/kv/": hc.http.Pages.KVEdit(data_kv),
         "/q/": PagesQueryAnswer(data_query, data_kv),

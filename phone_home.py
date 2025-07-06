@@ -25,6 +25,7 @@ import hc.http.Auth     # noqa: E402
 import hc.http.Pages    # noqa: E402
 import hc.http.WebSite  # noqa: E402
 import hc.http.sqlite   # noqa: E402
+import hc.http.pages.auth  # noqa: E402
 
 
 def argparser():
@@ -162,9 +163,8 @@ def main():
     else:
         config.auth = hc.http.Auth.Test()
 
-    config.routes = {
-        "/auth/login": hc.http.Pages.Login(),
-        "/auth/list": hc.http.Pages.AuthList(),
+    hc.http.pages.auth.add_routes(config.routes)
+    config.routes.update({
         "/metrics": hc.http.Pages.Metrics(),
         "/sitemap": hc.http.Pages.SiteMap(),
         "/style.css": hc.http.Pages.Static(
@@ -181,7 +181,7 @@ def main():
         ),
 
         "/phone_home": PagesPhoneHome(data),
-    }
+    })
 
     if hasattr(signal, 'SIGPIPE'):
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)
