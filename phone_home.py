@@ -165,7 +165,6 @@ def main():
 
     hc.http.pages.add_routes(config.routes)
     config.routes.update({
-        "/sitemap": hc.http.Pages.SiteMap(),
         "/style.css": hc.http.Pages.Static(
             style,
             content_type="text/css; charset=utf-8",

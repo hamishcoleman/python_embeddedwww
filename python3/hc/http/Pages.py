@@ -165,29 +165,3 @@ class KVEdit(Base):
         """]
 
         handler.send_page(HTTPStatus.OK, data)
-
-
-class SiteMap(Base):
-    def do_GET(self, handler):
-        data = []
-        head = handler.config.Widget.head("Index")
-        head.stylesheets.add("/style.css")
-        data += [head]
-        data += ["<body>"]
-        data += handler.config.Widget.navbar()
-        data += ["<ul>"]
-
-        for path, page in sorted(handler.config.routes.items()):
-            if not handler._checkperms(page):
-                continue
-            data += [f"""
-             <li><a href="{path}">{path}</a>
-            """]
-
-        data += ["""
-         </ul>
-         </body>
-         </html>
-        """]
-
-        handler.send_page(HTTPStatus.OK, data)

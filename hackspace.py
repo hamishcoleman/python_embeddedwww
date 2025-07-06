@@ -376,8 +376,6 @@ def main():
             "static/dsl_logo.svg",
             content_type="image/svg+xml",
         ),
-
-        "/sitemap": hc.http.Pages.SiteMap(),
     })
 
     if hasattr(signal, 'SIGPIPE'):

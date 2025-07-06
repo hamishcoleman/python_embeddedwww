@@ -348,7 +348,6 @@ def main():
 
         "/kv": hc.http.Pages.KV(data_kv),
         "/q": PagesQuery(data_query),
-        "/sitemap": hc.http.Pages.SiteMap(),
         "/test/notes": PagesChat(data_chat),
         "/test/page": hc.http.Pages.Static("A Testable Page"),
         "/style.css": hc.http.Pages.Static(
