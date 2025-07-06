@@ -89,21 +89,18 @@ class KV(SimpleForm):
         v = form[b"val"][0].decode("utf8")
         self.data[k] = v
 
-        handler.send_header("Location", f"{handler.path}")
-        handler.send_error(HTTPStatus.SEE_OTHER)
+        handler.send_location()
 
     def form_del(self, handler, form):
         row = form[b"_row"][0].decode("utf8")
         del self.data[row]
 
-        handler.send_header("Location", f"{handler.path}")
-        handler.send_error(HTTPStatus.SEE_OTHER)
+        handler.send_location()
 
     def form_edit(self, handler, form):
         row = form[b"_row"][0].decode("utf8")
         row = urllib.parse.quote(row)
-        handler.send_header("Location", f"{handler.path}/{row}")
-        handler.send_error(HTTPStatus.SEE_OTHER)
+        handler.send_location(f"{handler.path}/{row}")
 
     def do_GET(self, handler):
         data = []
@@ -155,9 +152,7 @@ class KVEdit(Base):
         form = handler.form
         val = form[b"val"][0].decode("utf8")
         self.kv[key] = val
-        handler.send_header("Location", f"/{path}")
-        handler.send_error(HTTPStatus.SEE_OTHER)
-        return
+        handler.send_location(f"/{path}")
 
     def do_GET(self, handler):
         # TODO: hardcodes how deep the subtree is
@@ -228,15 +223,13 @@ class Login(SimpleForm):
 
     def form_logout(self, handler, form):
         handler.config.auth.end_session(handler.session, handler=handler)
-        handler.send_header("Location", handler.path)
-        handler.send_error(HTTPStatus.SEE_OTHER)
+        handler.send_location()
 
     def form_login(self, handler, form):
         user = form[b"user"][0].decode("utf8")
         password = form[b"pass"][0].decode("utf8")
         handler.config.auth.login2session(handler, user, password)
-        handler.send_header("Location", handler.path)
-        handler.send_error(HTTPStatus.SEE_OTHER)
+        handler.send_location()
 
     def do_GET(self, handler):
         self.set_attribs(handler)
@@ -312,8 +305,7 @@ class AuthList(SimpleForm):
         action_session.id = row
         handler.config.auth.end_session(action_session, handler=handler)
 
-        handler.send_header("Location", handler.path)
-        handler.send_error(HTTPStatus.SEE_OTHER)
+        handler.send_location()
 
     def form_clone(self, handler, form):
         row = form[b"_row"][0].decode("utf8")
@@ -321,9 +313,8 @@ class AuthList(SimpleForm):
         action_session.id = row
         handler.config.auth.replace_data(action_session, handler.session)
 
-        # TODO: hardcodes the location of this page
-        handler.send_header("Location", "login")
-        handler.send_error(HTTPStatus.SEE_OTHER)
+        # TODO: hardcodes the location of the login page
+        handler.send_location("login")
 
     def do_GET(self, handler):
         data = []

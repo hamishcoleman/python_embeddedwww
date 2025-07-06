@@ -108,20 +108,17 @@ class PagesQuery(hc.http.Pages.SimpleForm):
     def form_del(self, handler, form):
         row = form[b"_row"][0].decode("utf8")
         del self.queries[row]
-        handler.send_header("Location", handler.path)
-        handler.send_error(HTTPStatus.SEE_OTHER)
+        handler.send_location()
 
     def form_allow(self, handler, form):
         row = form[b"_row"][0].decode("utf8")
         self.queries[row]["a"] = True
-        handler.send_header("Location", handler.path)
-        handler.send_error(HTTPStatus.SEE_OTHER)
+        handler.send_location()
 
     def form_deny(self, handler, form):
         row = form[b"_row"][0].decode("utf8")
         self.queries[row]["a"] = False
-        handler.send_header("Location", handler.path)
-        handler.send_error(HTTPStatus.SEE_OTHER)
+        handler.send_location()
 
     def form_edit(self, handler, form):
         row = form[b"_row"][0].decode("utf8")
@@ -129,9 +126,8 @@ class PagesQuery(hc.http.Pages.SimpleForm):
         print("D:queries", self.queries)
         q_safe = urllib.parse.quote(self.queries[row]["q"])
         print("D", q_safe, handler.path)
-        handler.send_header("Location", f"/kv/{q_safe}")
         # TODO: hardcodes the location of kv
-        handler.send_error(HTTPStatus.SEE_OTHER)
+        handler.send_location(f"/kv/{q_safe}")
 
     def do_POST(self, handler):
         form = handler.form

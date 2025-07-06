@@ -58,8 +58,7 @@ class PagesPhoneHome(hc.http.Pages.SimpleForm):
     def form_del(self, handler, form):
         row = form[b"_row"][0].decode("utf8")
         del self.data[row]
-        handler.send_header("Location", handler.path)
-        handler.send_error(HTTPStatus.SEE_OTHER)
+        handler.send_location()
 
     def do_POST(self, handler):
         form = handler.form

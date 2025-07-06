@@ -98,9 +98,8 @@ class PagesLogout(hc.http.Pages.Base):
 
     def do_GET(self, handler):
         handler.config.auth.end_session(handler.session, handler=handler)
-        handler.send_header("Location", "/login")
+        handler.send_location("/login")
         # TODO: hardcodes the location of login
-        handler.send_error(HTTPStatus.SEE_OTHER)
 
 
 class PagesAccount(hc.http.Pages.Base):
@@ -316,9 +315,9 @@ fix it promptly.
 class PagesRoot(hc.http.Pages.Base):
     def do_GET(self, handler):
         if not handler.session.has_auth:
-            handler.send_header("Location", "/login")
+            handler.send_location("/login")
             # TODO: hardcodes the location of login
-            handler.send_error(HTTPStatus.SEE_OTHER)
+            return
 
         data = []
         head = handler.config.Widget.head("DSL Door")

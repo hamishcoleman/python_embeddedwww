@@ -160,3 +160,10 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
         self.send_header('Content-type', content_type)
         self.end_headers()
         self.wfile.write(body)
+
+    def send_location(self, location=None):
+        """Send a response with a pointer to the new location"""
+        if location is None:
+            location = self.path
+        self.send_header("Location", location)
+        self.send_error(HTTPStatus.SEE_OTHER)
