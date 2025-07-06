@@ -13,6 +13,7 @@ def add_routes(routes):
     routes["/auth/login"] = Login()
     routes["/auth/logout"] = Logout()
     routes["/auth/list"] = List()
+    routes["/auth/check"] = Check()
 
 
 class Login(hc.http.Pages.SimpleForm):
@@ -161,3 +162,11 @@ class List(hc.http.Pages.SimpleForm):
         """]
 
         handler.send_page(HTTPStatus.OK, data)
+
+
+class Check(hc.http.Pages.Base):
+    """Provides a page that will check the client auth and return status"""
+    need_auth = True
+
+    def do_GET(self, handler):
+        handler.send_page(HTTPStatus.OK, "OK")
