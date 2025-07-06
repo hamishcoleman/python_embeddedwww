@@ -1,12 +1,10 @@
 import base64
 import hc.html.Widget
-import hc.http.Pages
-import hc.http.TBF
 import http.server
-import time
 import urllib.parse
 import uuid
 
+from .pages import metrics
 from http import HTTPStatus
 
 
@@ -40,9 +38,9 @@ class Config:
 
 class RequestHandler(http.server.BaseHTTPRequestHandler):
     def __init__(self, config, *args, **kwargs):
+        metrics.request_start(self)
         # save the config object
         self.config = config
-        self.time_start = time.time()
         self._form = None
         super().__init__(*args, **kwargs)
 
@@ -118,7 +116,7 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.NOT_FOUND)
             return
 
-        self.page.request += 1
+        metrics.request_route(self)
 
         if not self.page.tbf.withdraw(1):
             # TODO: increment error count
@@ -141,14 +139,7 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
     def render_page(self):
         self._route2render()
         self.wfile.flush()
-
-        time_finish = time.time()
-        elapsed = time_finish - self.time_start
-        try:
-            if self.page is not None:
-                self.page.elapsed += elapsed
-        except AttributeError:
-            pass
+        metrics.request_finish(self)
 
     def send_page(self, code, body, content_type="text/html; charset=utf-8"):
         if isinstance(body, list):

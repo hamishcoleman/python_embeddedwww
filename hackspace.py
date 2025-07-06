@@ -23,7 +23,7 @@ import hc.html.Widget   # noqa: E402
 import hc.http.Auth     # noqa: E402
 import hc.http.Pages    # noqa: E402
 import hc.http.WebSite  # noqa: E402
-import hc.http.pages.auth  # noqa: E402
+import hc.http.pages    # noqa: E402
 
 
 def argparser():
@@ -357,7 +357,7 @@ def main():
     config.Widget = Widget
     config.auth = hc.http.Auth.Test()
 
-    hc.http.pages.auth.add_routes(config.routes)
+    hc.http.pages.add_routes(config.routes)
     config.routes.update({
         "/": PagesRoot(),
         "/login": config.routes["/auth/login"],
@@ -377,7 +377,6 @@ def main():
             content_type="image/svg+xml",
         ),
 
-        "/metrics": hc.http.Pages.Metrics(),
         "/sitemap": hc.http.Pages.SiteMap(),
     })
 

@@ -25,7 +25,7 @@ import hc.http.Auth     # noqa: E402
 import hc.http.Pages    # noqa: E402
 import hc.http.WebSite  # noqa: E402
 import hc.http.sqlite   # noqa: E402
-import hc.http.pages.auth  # noqa: E402
+import hc.http.pages    # noqa: E402
 
 
 def argparser():
@@ -163,9 +163,8 @@ def main():
     else:
         config.auth = hc.http.Auth.Test()
 
-    hc.http.pages.auth.add_routes(config.routes)
+    hc.http.pages.add_routes(config.routes)
     config.routes.update({
-        "/metrics": hc.http.Pages.Metrics(),
         "/sitemap": hc.http.Pages.SiteMap(),
         "/style.css": hc.http.Pages.Static(
             style,

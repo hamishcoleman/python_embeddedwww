@@ -3,6 +3,7 @@ Provide useful implementations for some simple pages.
 """
 
 import hc.http.Auth
+import hc.http.TBF
 import shutil
 import urllib
 
@@ -18,20 +19,6 @@ class Base:
         self.request = 0
         self.elapsed = float()
         self.tbf = hc.http.TBF.Filter(1, 10)
-
-
-class Metrics(Base):
-    def do_GET(self, handler):
-        d = []
-        for route, page in handler.config.routes.items():
-            d += [f'site_request_count{{route="{route}"}} {page.request}\n']
-            d += [f'site_request_seconds{{route="{route}"}} {page.elapsed}\n']
-
-        for route, page in handler.config.routes_subtree.items():
-            d += [f'site_request_count{{route="{route}"}} {page.request}\n']
-            d += [f'site_request_seconds{{route="{route}"}} {page.elapsed}\n']
-
-        handler.send_page(HTTPStatus.OK, d, content_type="text/plain")
 
 
 class Static(Base):

@@ -29,6 +29,7 @@ sys.path.insert(
 import hc.http.Auth  # noqa: E402
 import hc.http.Pages  # noqa: E402
 import hc.http.WebSite  # noqa: E402
+import hc.http.pages  # noqa: E402
 import hc.http.pages.auth  # noqa: E402
 
 
@@ -341,12 +342,11 @@ def main():
     config.cookie_domain = args.cookie_domain
     config.auth = hc.http.Auth.Test()
 
-    hc.http.pages.auth.add_routes(config.routes)
+    hc.http.pages.add_routes(config.routes)
     config.routes.update({
         "/auth/login": PagesLogin(),
 
         "/kv": hc.http.Pages.KV(data_kv),
-        "/metrics": hc.http.Pages.Metrics(),
         "/q": PagesQuery(data_query),
         "/sitemap": hc.http.Pages.SiteMap(),
         "/test/notes": PagesChat(data_chat),
