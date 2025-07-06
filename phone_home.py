@@ -50,7 +50,7 @@ def argparser():
     return args
 
 
-class PagesPhoneHome(hc.http.Pages.Base):
+class PagesPhoneHome(hc.http.Pages.SimpleForm):
     def __init__(self, data):
         self.data = data
         super().__init__()
@@ -69,13 +69,8 @@ class PagesPhoneHome(hc.http.Pages.Base):
                 handler.send_error(HTTPStatus.UNAUTHORIZED)
                 return
 
-            action = form[b"_action"][0].decode("utf8")
-
-            if action == "del":
-                return self.form_del(handler, form)
-            else:
-                handler.send_error(HTTPStatus.BAD_REQUEST)
-                return
+            super().do_POST(handler)
+            return
 
         if len(self.data) > 100:
             # prevent a memory exhaustion attack

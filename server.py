@@ -135,32 +135,16 @@ class PagesQuery(hc.http.Pages.SimpleForm):
 
     def do_POST(self, handler):
         form = handler.form
-        try:
-            action = form[b"_action"][0].decode("utf8")
-        except KeyError:
-            # Default
-            action = "query"
 
-        if action == "query":
-            return self.form_query(handler, form)
+        if b"_action" in form:
+            if not handler.session.has_auth:
+                handler.send_error(HTTPStatus.UNAUTHORIZED)
+                return
 
-        if not handler.session.has_auth:
-            handler.send_error(HTTPStatus.UNAUTHORIZED)
+            super().do_POST(handler)
             return
 
-        if action == "del":
-            return self.form_del(handler, form)
-
-        if action == "allow":
-            return self.form_allow(handler, form)
-
-        if action == "deny":
-            return self.form_deny(handler, form)
-
-        if action == "edit":
-            return self.form_edit(handler, form)
-
-        handler.send_error(HTTPStatus.BAD_REQUEST)
+        self.form_query(handler, form)
 
     def do_GET(self, handler):
         data = []
