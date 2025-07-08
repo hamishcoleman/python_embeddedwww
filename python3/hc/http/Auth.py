@@ -2,6 +2,7 @@ import base64
 import hashlib
 import hmac
 import json
+import sqlite3
 import time
 
 from types import MappingProxyType
@@ -209,43 +210,13 @@ class JWTCookie(Base):
         return session
 
 
-class Test(JWTCookie):
+class Simple(JWTCookie):
     def __init__(self):
         super().__init__()
-        self.sessions = {}
+
+        # A ram cache
         # TODO: param to load auth table
-
-    def _get_user_db(self, user, password):
-        # TODO:
-        # - lookup user/password in auth table
-        # - construct data from auth table details
-        # - use fields that look more like JWT
-
-        fake_user = {
-            "admin": {
-                "desc": "A Test Admin",
-                "admin": True,
-            },
-            "user": {
-                "desc": "Test User",
-                "admin": False,
-            },
-        }
-        fake_pass = {
-            "admin": "1234",
-            "user": "1234",
-        }
-
-        if user not in fake_pass:
-            return None
-        if password != fake_pass[user]:
-            return None
-
-        data = fake_user[user].copy()
-        data["user"] = user
-        data["createdat"] = time.time()
-
-        return data
+        self.sessions = {}
 
     def end_session(self, session, handler=None):
         super().end_session(session, handler)
@@ -300,3 +271,112 @@ class Test(JWTCookie):
         self.sessions[session.id] = MappingProxyType(session.data)
 
         return session
+
+
+class Test(Simple):
+    """A test authenticator, with a hardcoded dummy user database"""
+
+    def _get_user_db(self, user, password):
+        # TODO:
+        # - lookup user/password in auth table
+        # - construct data from auth table details
+        # - use fields that look more like JWT
+
+        fake_user = {
+            "admin": {
+                "desc": "A Test Admin",
+                "admin": True,
+            },
+            "user": {
+                "desc": "Test User",
+                "admin": False,
+            },
+        }
+        fake_pass = {
+            "admin": "1234",
+            "user": "1234",
+        }
+
+        if user not in fake_pass:
+            return None
+        if password != fake_pass[user]:
+            return None
+
+        data = fake_user[user].copy()
+        data["user"] = user
+        data["createdat"] = time.time()
+
+        return data
+
+
+class Sqlite(Simple):
+    def __init__(self, dbfile):
+        super().__init__()
+
+        self.con = sqlite3.connect(dbfile)
+
+        self.con.execute("""
+            CREATE TABLE IF NOT EXISTS auth(
+                username TEXT PRIMARY KEY,
+                password TEXT,
+                enable INTEGER,
+                admin INTEGER
+            )
+        """)
+
+    def _get_user_db(self, user, password):
+        cur = self.con.execute(
+            """
+            SELECT password, admin
+            FROM auth
+            WHERE username = ? AND enable = TRUE
+            """,
+            [user],
+        )
+        rows = cur.fetchall()
+
+        if len(rows) != 1:
+            # len 0 means unknown or disabled username
+            # len >1 means something went wrong
+            return None
+
+        if not self._check_pass(password, rows[0][0]):
+            # password mismatch
+            return None
+
+        data = {}
+        data["admin"] = bool(rows[0][1])
+        data["user"] = user
+        data["createdat"] = time.time()
+
+        return data
+
+    def _crypt_pass(self, password, salt, iterations):
+        """Return the password string
+
+        >>> crypt("1", "r9wsGVOV", 10000)
+        'pbkdf2_sha256$10000$r9wsGVOV$vBYGQzpnmf3y7hek1CvhInzEbi/GNXJUwXh4ufxrMUA='
+        """
+        algorithm = "pbkdf2_sha256"
+        digest = hashlib.sha256().name
+        hash = base64.b64encode(hashlib.pbkdf2_hmac(
+                digest,
+                password.encode(),
+                salt.encode(),
+                iterations
+        )).decode("ascii").strip()
+        return "%s$%d$%s$%s" % (algorithm, iterations, salt, hash)
+
+    def _check_pass(self, password, crypted):
+        """Check a password
+
+        >>> check("1", "pbkdf2_sha256$10000$r9wsGVOV$vBYGQzpnmf3y7hek1CvhInzEbi/GNXJUwXh4ufxrMUA=")
+        True
+
+        >>> check("1", "pbkdf2_sha256$260000$5o4NaW9tV4fAB7a80vwOUx$EUGNGeMxRK16YRFtIOWlJaBRlfG+6y6LP3eDxQDgRq8=")
+        True
+        """  # noqa: E501
+        algorithm, iterations, salt, hash1 = crypted.split("$")
+        iterations = int(iterations)
+        crypted2 = self._crypt_pass(password, salt, iterations)
+        return crypted == crypted2
