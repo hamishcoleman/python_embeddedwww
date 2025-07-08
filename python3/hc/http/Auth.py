@@ -4,6 +4,7 @@ import hmac
 import json
 import sqlite3
 import time
+import yaml
 
 from types import MappingProxyType
 
@@ -334,6 +335,28 @@ class Test(Simple):
 
         data = fake_user[user].copy()
         data["user"] = user
+        data["createdat"] = time.time()
+
+        return data
+
+
+class YAML(Simple):
+    """Load the users from a yaml file"""
+
+    def __init__(self, yamlfile):
+        super().__init__()
+
+        with open(yamlfile) as f:
+            self.db = yaml.safe_load(f)
+
+    def _get_user_db(self, user, password):
+        if user not in self.db:
+            return None
+        if not self._check_pass(password, self.db[user]["password"]):
+            # password mismatch
+            return None
+
+        data = self.db[user]["data"].copy()
         data["createdat"] = time.time()
 
         return data
