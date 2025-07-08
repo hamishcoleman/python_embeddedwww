@@ -4,6 +4,7 @@ Show an index to the pages on the site
 
 import hc.http.Pages
 
+from . import auth
 from http import HTTPStatus
 
 
@@ -23,7 +24,7 @@ class SiteMap(hc.http.Pages.Base):
         data += ["<ul>"]
 
         for path, page in sorted(handler.config.routes.items()):
-            if not handler._checkperms(page):
+            if not auth.check_aaa(handler.session, page):
                 continue
             data += [f"""
              <li><a href="{path}">{path}</a>

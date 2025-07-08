@@ -16,6 +16,18 @@ def add_routes(routes):
     routes["/auth/check"] = Check()
 
 
+def check_aaa(session, page):
+    """Check the Page attrs against the request session"""
+
+    if page.need_auth:
+        if not session.has_auth:
+            return False
+    if page.need_admin:
+        if not session.has_admin:
+            return False
+    return True
+
+
 class Login(hc.http.Pages.SimpleForm):
     def __init__(self):
         super().__init__()

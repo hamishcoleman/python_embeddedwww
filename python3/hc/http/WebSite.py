@@ -4,6 +4,7 @@ import http.server
 import urllib.parse
 import uuid
 
+from .pages import auth
 from .pages import metrics
 from http import HTTPStatus
 
@@ -98,16 +99,6 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
 
         return None
 
-    def _checkperms(self, page):
-        """Check the Page attrs against the request session"""
-        if page.need_auth:
-            if not self.session.has_auth:
-                return False
-        if page.need_admin:
-            if not self.session.has_admin:
-                return False
-        return True
-
     def _route2render(self):
         """Handle the page all the way to rendering output"""
         self.page = self._route2page_obj()
@@ -125,7 +116,8 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
 
         # TODO: could add page.need_session and avoid getting session
         self.session = self.config.auth.request2session(self)
-        if not self._checkperms(self.page):
+        if not auth.check_aaa(self.session, self.page):
+            # TODO: increment unauth metrics
             self.send_error(HTTPStatus.UNAUTHORIZED)
             return
 
