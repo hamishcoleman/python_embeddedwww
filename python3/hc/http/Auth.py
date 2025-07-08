@@ -272,6 +272,36 @@ class Simple(JWTCookie):
 
         return session
 
+    def _crypt_pass(self, password, salt, iterations):
+        """Return the one-way crypted password string
+
+        >>> crypt("1", "r9wsGVOV", 10000)
+        'pbkdf2_sha256$10000$r9wsGVOV$vBYGQzpnmf3y7hek1CvhInzEbi/GNXJUwXh4ufxrMUA='
+        """
+        algorithm = "pbkdf2_sha256"
+        digest = hashlib.sha256().name
+        hash = base64.b64encode(hashlib.pbkdf2_hmac(
+                digest,
+                password.encode(),
+                salt.encode(),
+                iterations
+        )).decode("ascii").strip()
+        return "%s$%d$%s$%s" % (algorithm, iterations, salt, hash)
+
+    def _check_pass(self, password, crypted):
+        """Check if a cleartext password matches the crypted string
+
+        >>> check("1", "pbkdf2_sha256$10000$r9wsGVOV$vBYGQzpnmf3y7hek1CvhInzEbi/GNXJUwXh4ufxrMUA=")
+        True
+
+        >>> check("1", "pbkdf2_sha256$260000$5o4NaW9tV4fAB7a80vwOUx$EUGNGeMxRK16YRFtIOWlJaBRlfG+6y6LP3eDxQDgRq8=")
+        True
+        """  # noqa: E501
+        algorithm, iterations, salt, hash1 = crypted.split("$")
+        iterations = int(iterations)
+        crypted2 = self._crypt_pass(password, salt, iterations)
+        return crypted == crypted2
+
 
 class Test(Simple):
     """A test authenticator, with a hardcoded dummy user database"""
@@ -350,33 +380,3 @@ class Sqlite(Simple):
         data["createdat"] = time.time()
 
         return data
-
-    def _crypt_pass(self, password, salt, iterations):
-        """Return the password string
-
-        >>> crypt("1", "r9wsGVOV", 10000)
-        'pbkdf2_sha256$10000$r9wsGVOV$vBYGQzpnmf3y7hek1CvhInzEbi/GNXJUwXh4ufxrMUA='
-        """
-        algorithm = "pbkdf2_sha256"
-        digest = hashlib.sha256().name
-        hash = base64.b64encode(hashlib.pbkdf2_hmac(
-                digest,
-                password.encode(),
-                salt.encode(),
-                iterations
-        )).decode("ascii").strip()
-        return "%s$%d$%s$%s" % (algorithm, iterations, salt, hash)
-
-    def _check_pass(self, password, crypted):
-        """Check a password
-
-        >>> check("1", "pbkdf2_sha256$10000$r9wsGVOV$vBYGQzpnmf3y7hek1CvhInzEbi/GNXJUwXh4ufxrMUA=")
-        True
-
-        >>> check("1", "pbkdf2_sha256$260000$5o4NaW9tV4fAB7a80vwOUx$EUGNGeMxRK16YRFtIOWlJaBRlfG+6y6LP3eDxQDgRq8=")
-        True
-        """  # noqa: E501
-        algorithm, iterations, salt, hash1 = crypted.split("$")
-        iterations = int(iterations)
-        crypted2 = self._crypt_pass(password, salt, iterations)
-        return crypted == crypted2
