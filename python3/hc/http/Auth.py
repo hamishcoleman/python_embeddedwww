@@ -164,10 +164,55 @@ class Base:
         raise NotImplementedError
 
 
-class Test(Base):
+class JWTCookie(Base):
     def __init__(self):
-        self.sessions = {}
+        super().__init__()
         self.secret = b"secret"
+
+    def end_session(self, session, handler=None):
+        if session is None:
+            return
+
+        if handler is not None:
+            session.del_cookie(handler)
+
+        session.state = "logout"
+
+    def request2session(self, request, session=None):
+        if session is None:
+            raise ValueError("Need session")
+
+        # try decoding jwt
+        try:
+            session.data = _simplejwt2data(
+                self.secret,
+                session.id.encode("ascii")
+            )
+            session.state = "login"
+        except ValueError:
+            session.state = "logout"
+
+        return session
+
+    def login2session(self, response, user, password, data=None):
+        # TODO:
+        # this doesnt check the user and password, maybe it shouldnt be
+        # passed those?
+        session = Session()
+
+        session.id = _data2simplejwt(self.secret, data).decode("ascii")
+        session.data = data
+        session.state = "login"
+
+        session.to_response(response)
+
+        return session
+
+
+class Test(JWTCookie):
+    def __init__(self):
+        super().__init__()
+        self.sessions = {}
         # TODO: param to load auth table
 
     def _get_user_db(self, user, password):
@@ -203,57 +248,55 @@ class Test(Base):
         return data
 
     def end_session(self, session, handler=None):
+        super().end_session(session, handler)
+
         if session is None:
             return
         del self.sessions[session.id]
 
-        if handler is not None:
-            session.del_cookie(handler)
-
-        session.state = "logout"
-
     def replace_data(self, src, dst):
+        # This probably needs fixing when using jwt cookies
         self.sessions[dst.id] = self.sessions[src.id]
 
     def request2session(self, request):
         session = Session.from_request(request)
-        if session.id and session.data is None:
-            # The session could be created - but not populated - from the
-            # request, so we try to populate it
+        if not session.id:
+            # We couldnt get a session
+            # TODO: maybe return None
+            return session
 
-            # First, try our RAM session cache
-            try:
-                session.data = self.sessions[session.id]
-                session.state = "login"
-            except KeyError:
-                # then try decoding jwt
-                try:
-                    session.data = _simplejwt2data(
-                        self.secret,
-                        session.id.encode("ascii")
-                    )
+        if session.data is not None:
+            # We managed to populate the data from the request already
+            return session
 
-                    # Cache the readonly version
-                    self.sessions[session.id] = MappingProxyType(session.data)
+        # The session could be created - but not populated - from the
+        # request, so we try to populate it
 
-                    session.state = "login"
-                except ValueError:
-                    session.state = "logout"
+        # First, try our RAM session cache
+        try:
+            session.data = self.sessions[session.id]
+            session.state = "login"
+        except KeyError:
+            super().request2session(request, session=session)
+
+            if session.has_auth:
+                # Cache the readonly version
+                self.sessions[session.id] = MappingProxyType(session.data)
+
         return session
 
     def login2session(self, response, user, password):
-        session = Session()
         data = self._get_user_db(user, password)
         if data is None:
+            # Could not find this user in our data
+            session = Session()
             session.state = "bad"
             return session
-        session.state = "login"
 
-        session.id = _data2simplejwt(self.secret, data).decode("ascii")
-        session.data = data
+        session = super().login2session(response, user, password, data=data)
 
         # We enforce that the session data is readonly as that will allow
         # the use of JWT (or similar) to populate the session data
         self.sessions[session.id] = MappingProxyType(session.data)
 
-        session.to_response(response)
+        return session
