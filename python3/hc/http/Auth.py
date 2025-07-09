@@ -4,7 +4,6 @@ import hmac
 import json
 import sqlite3
 import time
-import yaml
 
 from types import MappingProxyType
 
@@ -311,62 +310,49 @@ class Simple(JWTCookie):
         return crypted == crypted2
 
 
-class Test(Simple):
-    """A test authenticator, with a hardcoded dummy user database"""
+class RAMData(Simple):
+    """Use a dict to store the users"""
 
-    def _get_user_db(self, user, password):
-        # TODO:
-        # - lookup user/password in auth table
-        # - construct data from auth table details
-        # - use fields that look more like JWT
-
-        fake_user = {
-            "admin": {
-                "desc": "A Test Admin",
-                "admin": True,
-            },
-            "user": {
-                "desc": "Test User",
-                "admin": False,
-            },
-        }
-        fake_pass = {
-            "admin": "1234",
-            "user": "1234",
-        }
-
-        if user not in fake_pass:
-            return None
-        if password != fake_pass[user]:
-            return None
-
-        data = fake_user[user].copy()
-        data["user"] = user
-        data["createdat"] = time.time()
-
-        return data
-
-
-class YAML(Simple):
-    """Load the users from a yaml file"""
-
-    def __init__(self, yamlfile):
+    def __init__(self, userdb):
         super().__init__()
-
-        with open(yamlfile) as f:
-            self.db = yaml.safe_load(f)
+        self.userdb = userdb
 
     def _get_user_db(self, user, password):
-        if user not in self.db:
+        if user not in self.userdb:
             return None
-        if not self._check_pass(password, self.db[user]["password"]):
+        if not self._check_pass(password, self.userdb[user]["password"]):
             # password mismatch
             return None
 
-        data = self.db[user]["data"].copy()
+        data = self.userdb[user]["data"].copy()
         data["createdat"] = time.time()
 
         return data
+
+
+class Test(RAMData):
+    """A test authenticator, with a hardcoded dummy user database"""
+
+    def __init__(self):
+
+        userdb = {
+            "admin": {
+                "data": {
+                    "admin": True,
+                    "user": "admin",
+                },
+            },
+            "user": {
+                "data": {
+                    "admin": False,
+                    "user": "user",
+                },
+            },
+        }
+        userdb["admin"]["password"] = self._crypt_pass("1234", "a", 10)
+        userdb["user"]["password"] = self._crypt_pass("1234", "b", 10)
+
+        super().__init__(userdb)
 
 
 class Sqlite(Simple):
