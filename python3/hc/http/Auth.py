@@ -194,6 +194,13 @@ class JWTCookie(Base):
         except ValueError:
             session.state = "logout"
 
+        # Confirm that we have the minimum set of data in our session
+        for claim in ["user"]:
+            if claim not in session.data:
+                session.data = None
+                session.state = "logout"
+                return session
+
         return session
 
     def login2session(self, response, user, password, data=None):
