@@ -8,6 +8,7 @@ import os
 import signal
 import socketserver
 import sys
+import yaml
 
 from http import HTTPStatus
 
@@ -32,6 +33,10 @@ def argparser():
     ap.add_argument(
         "-d", "--debug",
         action="store_true",
+    )
+    ap.add_argument(
+        "--config",
+        help="Location of config file",
     )
     ap.add_argument(
         "--db",
@@ -144,6 +149,12 @@ class RequestHandler(hc.http.WebSite.RequestHandler):
 def main():
     args = argparser()
 
+    if args.config:
+        with open(args.config) as f:
+            config = yaml.safe_load(f)
+    else:
+        config = {}
+
     data = {}
 
     style = """
@@ -156,14 +167,19 @@ def main():
         }
     """
 
-    config = hc.http.WebSite.Config()
+    webconfig = hc.http.WebSite.Config()
     if args.db:
-        config.auth = hc.http.Auth.Sqlite(args.db)
+        webconfig.auth = hc.http.Auth.Sqlite(args.db)
+    elif "users" in config:
+        webconfig.auth = hc.http.Auth.RAMData(config["users"])
     else:
-        config.auth = hc.http.Auth.Test()
+        webconfig.auth = hc.http.Auth.Test()
 
-    hc.http.pages.add_routes(config.routes)
-    config.routes.update({
+    if "jwtsecret" in config:
+        webconfig.auth.secret = config["jwtsecret"].encode("ascii")
+
+    hc.http.pages.add_routes(webconfig.routes)
+    webconfig.routes.update({
         "/style.css": hc.http.Pages.Static(
             style,
             content_type="text/css; charset=utf-8",
@@ -184,7 +200,7 @@ def main():
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
     socketserver.TCPServer.allow_reuse_address = True
-    handler = functools.partial(RequestHandler, config)
+    handler = functools.partial(RequestHandler, webconfig)
 
     httpd = socketserver.TCPServer(("", args.port), handler)
     try:

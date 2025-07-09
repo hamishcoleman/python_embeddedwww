@@ -1,0 +1,15 @@
+---
+
+jwtsecret: sharedsecret
+
+users:
+  admin:
+    password: pbkdf2_sha256$10000$WU3VOKzD$ErNjKbRJR/vHQf2JsKx4jd6CPPx6KnBof+3C/w9dsfM=
+    data:
+      user: admin
+      admin: True
+  user:
+    password: pbkdf2_sha256$10000$1J611I6Q$SwJPldCLDq4V65V6dOm3N8P7W/iX9/ogOBIuh3tdduU=
+    data:
+      user: user
+      admin: False
