@@ -194,11 +194,12 @@ class JWTCookie(Base):
             session.state = "logout"
 
         # Confirm that we have the minimum set of data in our session
-        for claim in ["user"]:
-            if claim not in session.data:
-                session.data = None
-                session.state = "logout"
-                return session
+        if session.data is not None:
+            for claim in ["user"]:
+                if claim not in session.data:
+                    session.data = None
+                    session.state = "logout"
+                    return session
 
         return session
 
