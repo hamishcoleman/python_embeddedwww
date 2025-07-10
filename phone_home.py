@@ -26,6 +26,7 @@ import hc.http.Auth     # noqa: E402
 import hc.http.Pages    # noqa: E402
 import hc.http.WebSite  # noqa: E402
 import hc.http.pages    # noqa: E402
+import hc.http.pages.jdoc  # noqa: E402
 
 
 def argparser():
@@ -197,6 +198,8 @@ def main():
 
         "/phone_home": PagesPhoneHome(data),
     })
+
+    hc.http.pages.jdoc.add_routes_subtree(webconfig.routes_subtree, data)
 
     if hasattr(signal, 'SIGPIPE'):
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)
