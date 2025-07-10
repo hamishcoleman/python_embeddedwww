@@ -168,7 +168,9 @@ class PagesQuery(hc.http.Pages.SimpleForm):
                 "h": "Host",
                 "desc": None,
                 "a": "Allowed",
+                "Action": None,
             }
+            table.action_column = "Action"
             table.actions = ["allow", "deny", "del", "edit"]
             table.update_head(head)
             data += [table]

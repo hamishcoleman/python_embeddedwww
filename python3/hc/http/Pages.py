@@ -109,7 +109,9 @@ class KV(SimpleForm):
         table.columns = {
             None: "key",
             "val": None,
+            "Action": None,
         }
+        table.action_column = "Action"
         table.actions = ["edit", "del"]
         # Deliberately avoid calling table.update_head() to show that it
         # can still work as a table

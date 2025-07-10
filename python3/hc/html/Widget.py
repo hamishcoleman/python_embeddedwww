@@ -33,6 +33,7 @@ class DefaultTable:
         self.data = None
         self.actions = []
         self.columns = {}
+        self.action_column = None
 
     def __str__(self):
         """Given a dict of dicts, output a nice table"""
@@ -58,9 +59,6 @@ class DefaultTable:
              </th>
             """]
 
-        if self.actions:
-            r += ['<th>Action']
-
         r += ["""
           </thead>
           <tbody>
@@ -71,6 +69,19 @@ class DefaultTable:
         for k, row in self.data.items():
             r += ["<tr>"]
             for column in self.columns.keys():
+                if column == self.action_column:
+                    r += ["<td>"]
+                    r += ["<form method=post>"]
+                    r += [f'<input type=hidden name=_row value="{k}"/>']
+                    for action in self.actions:
+                        r += [
+                            f'<button name="_action" value="{action}">',
+                            action,
+                            '</button>',
+                        ]
+                    r += ["</form>"]
+                    continue
+
                 if column is None:
                     val = k
                 else:
@@ -80,17 +91,6 @@ class DefaultTable:
                         val = row
                 r += [f"<td>{val}</td>\n"]
 
-            if self.actions:
-                r += ["<td>"]
-                r += ["<form method=post>"]
-                r += [f'<input type=hidden name=_row value="{k}"/>']
-                for action in self.actions:
-                    r += [
-                        f'<button name="_action" value="{action}">',
-                        action,
-                        '</button>',
-                    ]
-                r += ["</form>"]
             r += ["</tr>\n"]
 
         r += ["""

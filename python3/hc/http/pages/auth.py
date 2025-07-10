@@ -159,10 +159,12 @@ class List(hc.http.Pages.SimpleForm):
         table.caption = "Sessions List"
         table.data = handler.config.auth.sessions
         table.columns = {
+            "Action": None,
             "createdat": None,
             "user": None,
             "admin": None,
         }
+        table.action_column = "Action"
         table.actions = ["del", "clone"]
         # Deliberately avoid calling table.update_head() to show that it
         # can still work as a table

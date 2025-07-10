@@ -118,7 +118,9 @@ class PagesPhoneHome(hc.http.Pages.SimpleForm):
             "hostname": None,
             "fqdn": None,
             "pub_key_ed25519": "Pub Key",
+            "Action": None,
         }
+        table.action_column = "Action"
         table.actions = ["del"]
         table.update_head(head)
         data += [table]
