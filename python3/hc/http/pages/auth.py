@@ -160,8 +160,8 @@ class List(hc.http.Pages.SimpleForm):
         table.data = handler.config.auth.sessions
         table.columns = {
             "Action": None,
-            "createdat": None,
-            "user": None,
+            "nbf": None,
+            "sub": None,
             "admin": None,
             None: "Cookie",
         }

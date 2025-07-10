@@ -72,7 +72,7 @@ class Session:
     def user(self):
         if self.data is None:
             return None
-        return self.data["user"]
+        return self.data["sub"]
 
     @property
     def has_auth(self):
@@ -195,11 +195,21 @@ class JWTCookie(Base):
 
         # Confirm that we have the minimum set of data in our session
         if session.data is not None:
-            for claim in ["user"]:
+            for claim in ["sub", "nbf"]:
                 if claim not in session.data:
                     session.data = None
                     session.state = "logout"
                     return session
+
+        if request.time_start < session.data["nbf"]:
+            session.data = None
+            session.state = "logout"
+            return session
+
+        if "exp" in session.data and request.time_start > session.data["exp"]:
+            session.data = None
+            session.state = "logout"
+            return session
 
         return session
 
@@ -326,7 +336,7 @@ class RAMData(Simple):
             return None
 
         data = self.userdb[user]["data"].copy()
-        data["createdat"] = time.time()
+        data["nbf"] = int(time.time())
 
         return data
 
@@ -340,13 +350,15 @@ class Test(RAMData):
             "admin": {
                 "data": {
                     "admin": True,
-                    "user": "admin",
+                    "nbf": 1,
+                    "sub": "admin",
                 },
             },
             "user": {
                 "data": {
                     "admin": False,
-                    "user": "user",
+                    "nbf": 1,
+                    "sub": "user",
                 },
             },
         }
@@ -393,7 +405,7 @@ class Sqlite(Simple):
 
         data = {}
         data["admin"] = bool(rows[0][1])
-        data["user"] = user
-        data["createdat"] = time.time()
+        data["sub"] = user
+        data["nbf"] = int(time.time())
 
         return data
