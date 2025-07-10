@@ -86,7 +86,10 @@ class DefaultTable:
                     val = k
                 else:
                     if isinstance(row, (dict, MappingProxyType)):
-                        val = row[column]
+                        try:
+                            val = row[column]
+                        except KeyError:
+                            val = ""
                     else:
                         val = row
                 r += [f"<td>{val}</td>\n"]
