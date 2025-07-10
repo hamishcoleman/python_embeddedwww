@@ -163,6 +163,7 @@ class List(hc.http.Pages.SimpleForm):
             "createdat": None,
             "user": None,
             "admin": None,
+            None: "Cookie",
         }
         table.action_column = "Action"
         table.actions = ["del", "clone"]
