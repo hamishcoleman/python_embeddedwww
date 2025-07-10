@@ -33,7 +33,7 @@ class DefaultTable:
         self.data = None
         self.actions = []
         self.columns = {}
-        self.action_column = None
+        self.action_column = ""
 
     def __str__(self):
         """Given a dict of dicts, output a nice table"""
