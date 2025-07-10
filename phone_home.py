@@ -96,6 +96,10 @@ class PagesPhoneHome(hc.http.Pages.SimpleForm):
         handler.send_page(HTTPStatus.OK, "Recorded")
 
     def do_GET(self, handler):
+        if not handler.session.has_auth:
+            handler.send_error(HTTPStatus.UNAUTHORIZED)
+            return
+
         data = []
         head = handler.config.Widget.head("Phone Home")
         head.stylesheets.add("/style.css")
@@ -103,10 +107,6 @@ class PagesPhoneHome(hc.http.Pages.SimpleForm):
         data += [head]
 
         data += handler.config.Widget.navbar()
-
-        if not handler.session.has_auth:
-            handler.send_error(HTTPStatus.UNAUTHORIZED)
-            return
 
         table = handler.config.Widget.table()
         table.style = "sortable"
