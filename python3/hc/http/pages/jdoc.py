@@ -21,21 +21,30 @@ class JdocDetail(Pages.SimpleForm):
         super().__init__()
         self.table = table
 
+    def _jdoc_get(self, _id):
+        return self.table[_id]
+
+    def _notfound(self, handler):
+        """while debugging, output some useful info when _id not found"""
+        # handler.send_error(HTTPStatus.NOT_FOUND)
+        data = []
+        head = handler.config.Widget.head("notfound")
+        data += [head]
+        data += ["<body>"]
+        data += ["<ul>"]
+        for k in self.table.keys():
+            data += [f'<li><a href="/jdoc/{k}">{k}</a>']
+        handler.send_page(HTTPStatus.OK, data)
+
     def do_GET(self, handler):
         # TODO: hardcodes how deep the subtree is
         _, path, _id = handler.path.split("/")
 
         try:
-            jdoc = self.table[_id]
+            jdoc = self._jdoc_get(_id)
         except KeyError:
-            # handler.send_error(HTTPStatus.NOT_FOUND)
-            data = []
-            data += ["_id:", _id, "\n"]
-            data += [list(self.table.keys())]
-            handler.send_page(HTTPStatus.OK, data)
+            self._notfound(handler)
             return
-
-        # TODO: jdoc sort order
 
         data = []
         head = handler.config.Widget.head("JdocDetail")
@@ -44,19 +53,23 @@ class JdocDetail(Pages.SimpleForm):
         data += ["<body>"]
         data += handler.config.Widget.navbar()
 
+        # TODO: jdoc sort order
+
         table = handler.config.Widget.table()
-        table.style = "sortable"
+        table.style = "dragable"
         table.data = jdoc
         table.columns = {
             # TODO: drag handle with hover timestamp
             None: "Key",
             "Val": None,
         }
+        # TODO: action edit val
         table.update_head(head)
         data += [table]
 
         # TODO: table of actions
         # TODO: collapsed div containing the hidden fields
+        # TODO: save current order
 
         data += ["""
           </body>
