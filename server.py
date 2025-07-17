@@ -345,6 +345,8 @@ def main():
     config.auth = hc.http.Auth.Test()
 
     hc.http.pages.add_routes(config.routes)
+    config.Widget.add_routes(config.routes)
+
     config.routes.update({
         "/auth/login": PagesLogin(),
 
@@ -355,14 +357,6 @@ def main():
         "/style.css": hc.http.Pages.Static(
             style,
             content_type="text/css",
-        ),
-        "/static/sortable.js": hc.http.Pages.StaticFile(
-            "static/sortable.js",
-            content_type="application/javascript; charset=utf-8",
-        ),
-        "/static/sortable.css": hc.http.Pages.StaticFile(
-            "static/sortable.css",
-            content_type="text/css; charset=utf-8",
         ),
     })
     config.routes_subtree = {

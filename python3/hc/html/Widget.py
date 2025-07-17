@@ -1,4 +1,8 @@
+import os
+
 from types import MappingProxyType
+
+from ..http import Pages
 
 
 class DefaultHead:
@@ -124,3 +128,14 @@ class Default:
     @classmethod
     def table(cls):
         return DefaultTable()
+
+    @classmethod
+    def add_routes(cls, routes):
+        routes["/static/sortable.css"] = Pages.StaticFile(
+            os.path.join(os.path.dirname(__file__), "sortable.css"),
+            content_type="text/css; charset=utf-8",
+        )
+        routes["/static/sortable.js"] = Pages.StaticFile(
+            os.path.join(os.path.dirname(__file__), "sortable.js"),
+            content_type="application/javascript; charset=utf-8",
+        )

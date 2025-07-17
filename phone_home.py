@@ -182,20 +182,13 @@ def main():
         webconfig.auth.secret = config["jwtsecret"].encode("ascii")
 
     hc.http.pages.add_routes(webconfig.routes)
+    webconfig.Widget.add_routes(webconfig.routes)
+
     webconfig.routes.update({
         "/style.css": hc.http.Pages.Static(
             style,
             content_type="text/css; charset=utf-8",
         ),
-        "/static/sortable.js": hc.http.Pages.StaticFile(
-            "static/sortable.js",
-            content_type="application/javascript; charset=utf-8",
-        ),
-        "/static/sortable.css": hc.http.Pages.StaticFile(
-            "static/sortable.css",
-            content_type="text/css; charset=utf-8",
-        ),
-
         "/phone_home": PagesPhoneHome(data),
     })
 
