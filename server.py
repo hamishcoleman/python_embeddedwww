@@ -174,6 +174,8 @@ class PagesQuery(hc.http.Pages.SimpleForm):
             table.actions = ["allow", "deny", "del", "edit"]
             table.update_head(head)
             data += [table]
+        else:
+            data += ["<p>List visible after login</p>"]
 
         data += ["""
           </body>
