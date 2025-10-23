@@ -3,7 +3,7 @@ Provide useful implementations for some simple pages.
 """
 
 import hc.http.Auth
-import hc.http.TBF
+import hc.http.GCRA
 import shutil
 import urllib
 
@@ -18,7 +18,7 @@ class Base:
     def __init__(self):
         self.request = 0
         self.elapsed = float()
-        self.tbf = hc.http.TBF.Filter(1, 10)
+        self.tbf = hc.http.GCRA.Filter(1, 10)
 
 
 class Static(Base):
