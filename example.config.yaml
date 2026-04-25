@@ -1,5 +1,8 @@
 ---
 
+camera:
+  dir: /vol1/ftp/camera
+
 jwtsecret: sharedsecret
 
 users:
