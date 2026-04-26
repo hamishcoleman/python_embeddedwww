@@ -184,8 +184,11 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
     @property
     def url(self):
         if len(self.param):
-            paramstr = "?" + urllib.parse.urlencode(self.param, doseq=True)
-        return self.path + paramstr
+            return self.path + "?" + urllib.parse.urlencode(
+                self.param,
+                doseq=True
+            )
+        return self.path
 
     def send_location(self, location=None):
         """Send a response with a pointer to the new location"""
