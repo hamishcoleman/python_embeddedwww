@@ -162,6 +162,8 @@ class PagesCamera(hc.http.Pages.Base):
         )
 
 
+# TODO:
+# - refactor this into a reusable class
 class PagesImages(hc.http.Pages.Base):
     need_auth = True
     enable_signedurl = True
@@ -214,9 +216,6 @@ class PagesImages(hc.http.Pages.Base):
 
 
 class RequestHandler(hc.http.WebSite.RequestHandler):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def do_GET(self):
         self.render_page()
 
@@ -293,7 +292,7 @@ def main():
     }
 
     if hasattr(signal, 'SIGPIPE'):
-        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+        signal.signal(signal.SIGPIPE, signal.SIG_IGN)
 
     socketserver.TCPServer.allow_reuse_address = True
     handler = functools.partial(RequestHandler, webconfig)
