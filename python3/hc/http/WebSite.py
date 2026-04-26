@@ -43,6 +43,7 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
         # save the config object
         self.config = config
         self._form = None
+        self.param = {}
         super().__init__(*args, **kwargs)
 
     # The default method happily appends the responce /after/ adding headers,
@@ -86,8 +87,30 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
         self._form = urllib.parse.parse_qs(data)
         return self._form
 
+    def _extract_param(self):
+        """Examine self.path for a param and populate our param field"""
+        if len(self.param):
+            # We have already extracted params, nothing more to do
+            return
+
+        if "?" not in self.path:
+            # There are no params, nothing to do
+            return
+
+        split = urllib.parse.urlsplit(self.path)
+        self.path = split.path
+        self.param = urllib.parse.parse_qs(split.query)
+
+    def _validate_param(self):
+        """Confirm that the page object is expecting these params"""
+        for k in self.param:
+            if k not in self.page.has_params:
+                return False
+        return True
+
     def _route2page_obj(self):
         """Returns the object needed to process this page"""
+        self._extract_param()
         try:
             return self.config.routes[self.path]
         except KeyError:
@@ -104,6 +127,9 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
         self.page = self._route2page_obj()
 
         if self.page is None:
+            self.send_error(HTTPStatus.NOT_FOUND)
+            return
+        if not self._validate_param():
             self.send_error(HTTPStatus.NOT_FOUND)
             return
 
@@ -144,9 +170,15 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    @property
+    def url(self):
+        if len(self.param):
+            paramstr = "?" + urllib.parse.urlencode(self.param, doseq=True)
+        return self.path + paramstr
+
     def send_location(self, location=None):
         """Send a response with a pointer to the new location"""
         if location is None:
-            location = self.path
+            location = self.url
         self.send_header("Location", location)
         self.send_error(HTTPStatus.SEE_OTHER)
