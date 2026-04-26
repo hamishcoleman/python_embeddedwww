@@ -14,6 +14,7 @@ class Base:
     """The base Page handler class.  This is subclassed to build pages"""
     need_auth = False
     need_admin = False
+    enable_signedurl = False
     has_params = []
 
     def __init__(self):

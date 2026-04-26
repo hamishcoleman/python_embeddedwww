@@ -33,6 +33,7 @@ class Config:
     def __init__(self):
         self.Widget = hc.html.Widget.Default
         self.auth = None
+        self.signer = None
         self.routes = {}
         self.routes_subtree = {}
 
@@ -104,6 +105,9 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
     def _validate_param(self):
         """Confirm that the page object is expecting these params"""
         for k in self.param:
+            if k == "sign" and self.page.enable_signedurl:
+                # special case for signed urls
+                continue
             if k not in self.page.has_params:
                 return False
         return True
@@ -143,9 +147,16 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
         # TODO: could add page.need_session and avoid getting session
         self.session = self.config.auth.request2session(self)
         if not auth.check_aaa(self.session, self.page):
-            # TODO: increment unauth metrics
-            self.send_error(HTTPStatus.UNAUTHORIZED)
-            return
+            ok = False
+
+            if self.page.enable_signedurl:
+                # maybe request has a signature?
+                ok = self.config.signer.check_signature(self)
+
+            if not ok:
+                # TODO: increment unauth metrics
+                self.send_error(HTTPStatus.UNAUTHORIZED)
+                return
 
         page_method_name = 'do_' + self.command
         if not hasattr(self.page, page_method_name):
