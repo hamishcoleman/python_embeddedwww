@@ -14,6 +14,8 @@ def add_routes(routes):
     routes["/auth/logout"] = Logout()
     routes["/auth/list"] = List()
     routes["/auth/check"] = Check()
+    # create invite link
+    # consume invite link and set cookie
 
 
 def check_aaa(session, page):

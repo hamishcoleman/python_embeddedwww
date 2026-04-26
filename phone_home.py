@@ -183,6 +183,8 @@ def main():
 
     hc.http.pages.add_routes(webconfig.routes)
     webconfig.Widget.add_routes(webconfig.routes)
+    hc.http.pages.jdoc.add_routes(webconfig.routes)
+    hc.http.pages.jdoc.add_routes_subtree(webconfig.routes_subtree, data)
 
     webconfig.routes.update({
         "/style.css": hc.http.Pages.Static(
@@ -191,8 +193,6 @@ def main():
         ),
         "/phone_home": PagesPhoneHome(data),
     })
-
-    hc.http.pages.jdoc.add_routes_subtree(webconfig.routes_subtree, data)
 
     if hasattr(signal, 'SIGPIPE'):
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)

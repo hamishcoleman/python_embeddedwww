@@ -4,14 +4,43 @@ Display jdoc objects
 (Currently jdoc are just json, but they will grow in context)
 """
 
+import os
+
 from .. import Pages
 
 from http import HTTPStatus
 
 
+def add_routes(routes):
+    routes["/static/dragable.css"] = Pages.StaticFile(
+        os.path.join(os.path.dirname(__file__), "dragable.css"),
+        content_type="text/css; charset=utf-8",
+    )
+    routes["/static/dragable.js"] = Pages.StaticFile(
+        os.path.join(os.path.dirname(__file__), "dragable.js"),
+        content_type="application/javascript; charset=utf-8",
+    )
+
+
 def add_routes_subtree(routes_subtree, table):
     """Add our default set of pages at their usual paths"""
     routes_subtree["/jdoc/"] = JdocDetail(table)
+
+
+class TableDragable:
+    def __init__(self):
+        self.style = "dragable"
+
+    def __str__(self):
+        r = []
+        r += [f'<table class="{self.style}">\n']
+        r += ["""
+          <thead>
+           <tr>
+            <th>Key
+            <th>Val
+          <tbody>
+        """]
 
 
 class JdocCategory:

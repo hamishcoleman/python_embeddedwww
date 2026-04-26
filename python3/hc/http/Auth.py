@@ -282,6 +282,17 @@ class Simple(JWTCookie):
             session.state = "bad"
             return session
 
+        # JWT-like fields:
+        # iss   issuer
+        # sub   subject     # done
+        # aud   audience, array
+        # exp   expires     # checked, not set
+        # nbf   notbefore   # done
+        # iat   issuedat    # done
+        # jti   jwtid
+        # scope space separated string
+        #
+
         session = super().login2session(response, user, password, data=data)
 
         # We enforce that the session data is readonly as that will allow
