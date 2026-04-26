@@ -11,6 +11,7 @@ import shutil
 import signal
 import socketserver
 import sys
+import urllib.parse
 import yaml
 
 from http import HTTPStatus
@@ -27,6 +28,7 @@ sys.path.insert(
 
 import hc.http.Auth     # noqa: E402
 import hc.http.Pages    # noqa: E402
+import hc.http.Signer   # noqa: E402
 import hc.http.WebSite  # noqa: E402
 import hc.http.pages    # noqa: E402
 import hc.http.pages.jdoc  # noqa: E402
@@ -72,9 +74,12 @@ class PagesCamera(hc.http.Pages.Base):
         super().__init__()
 
     @staticmethod
-    def _img2url(filename):
+    def _img2url(handler, filename):
         # Hardcodes the img url path
-        return f"/img/tn/{filename}"
+        path = f"/img/tn/{filename}"
+        param = handler.config.signer.create_url(path)
+        paramstr = "?" + urllib.parse.urlencode(param)
+        return path + paramstr
 
     def do_GET(self, handler):
         start = int(handler.param.get("start", ["0"])[0])
@@ -135,8 +140,8 @@ class PagesCamera(hc.http.Pages.Base):
         for i in times[start_index:start_index+count]:
             this = index[i]
             dt = datetime.datetime.fromtimestamp(i)
-            img = self._img2url(this["img"])
-            mov = self._img2url(this["mov"])
+            img = self._img2url(handler, this["img"])
+            mov = self._img2url(handler, this["mov"])
             page += [
                 '<div class="gallery_item">',
                 f'<a href="{img}">',
@@ -159,6 +164,7 @@ class PagesCamera(hc.http.Pages.Base):
 
 class PagesImages(hc.http.Pages.Base):
     need_auth = True
+    enable_signedurl = True
 
     def __init__(self, directory):
         if not os.path.isdir(directory):
@@ -264,7 +270,12 @@ def main():
         webconfig.auth = hc.http.Auth.Test()
 
     if "jwtsecret" in config:
-        webconfig.auth.secret = config["jwtsecret"].encode("ascii")
+        webconfig.auth.secret = config["jwtsecret"].encode("utf8")
+
+    if "signingsecret" in config:
+        webconfig.signer = hc.http.Signer.Simple(
+            config["signingsecret"].encode("utf8"),
+        )
 
     hc.http.pages.add_routes(webconfig.routes)
     webconfig.Widget.add_routes(webconfig.routes)
