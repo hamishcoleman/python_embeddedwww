@@ -61,6 +61,9 @@ def argparser():
 
 class PagesCamera(hc.http.Pages.Base):
     need_auth = True
+    has_params = [
+        "start",
+    ]
 
     def __init__(self, directory):
         if not os.path.isdir(directory):
@@ -74,9 +77,13 @@ class PagesCamera(hc.http.Pages.Base):
         return f"/img/tn/{filename}"
 
     def do_GET(self, handler):
+        start = int(handler.param.get("start", ["0"])[0])
+        count = 18
+
+        # Index the directory
         index = {}
         for filename in glob.glob(f"{self.dir}/*.jpg"):
-            mtime = os.stat(filename).st_mtime
+            mtime = int(os.stat(filename).st_mtime)
             this = {
                 "img": os.path.basename(filename),
             }
@@ -84,8 +91,23 @@ class PagesCamera(hc.http.Pages.Base):
             this["mov"] = mov
             index[mtime] = this
 
-        times = sorted(index)
-        times.reverse()
+        # Filter the index for just the view we want
+        times = sorted(index, reverse=True)
+        if start == 0:
+            start_index = 0
+        else:
+            i = 0
+            while True:
+                if i > len(times):
+                    i = len(times) + 1
+                    break
+
+                if times[i] <= start:
+                    break
+
+                i += 1
+
+            start_index = max(i, 0)
 
         page = []
         head = handler.config.Widget.head("Camera")
@@ -94,8 +116,23 @@ class PagesCamera(hc.http.Pages.Base):
         page += ["<body>"]
         page += handler.config.Widget.navbar()
 
+        prev_time = times[max(start_index - count, 0)]
+        next_time = times[min(start_index + count, len(index) - 1)]
+        page += [
+            '<form method="get">',
+            '<button name="start" value="0">&lt;&lt;</button>',
+            f'<button name="start" value="{prev_time}">&lt;</button>',
+            start_index,
+            " - ",
+            start_index + count - 1,
+            " of ",
+            len(index),
+            f'<button name="start" value="{next_time}">&gt;</button>',
+            "</form>",
+        ]
+
         page += ['<div class="gallery">']
-        for i in times:
+        for i in times[start_index:start_index+count]:
             this = index[i]
             dt = datetime.datetime.fromtimestamp(i)
             img = self._img2url(this["img"])
