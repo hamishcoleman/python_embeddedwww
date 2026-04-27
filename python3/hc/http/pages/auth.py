@@ -214,12 +214,42 @@ class List(hc.http.Pages.SimpleForm):
         handler.send_page(HTTPStatus.OK, data)
 
 
+class MockHandler:
+    def __init__(self, config):
+        self.config = config
+        self.path = None
+        self.param = {}
+
+
 class Check(hc.http.Pages.Base):
     """Provides a page that will check the client auth and return status"""
-    need_auth = True
+    enable_signedurl = True
+
+    def __init__(self):
+        super().__init__()
+
+        # nginx can call us quite a lot
+        self.tbf = hc.http.GCRA.Filter(100, 1000)
 
     def do_GET(self, handler):
-        handler.send_page(HTTPStatus.OK, "OK")
+        page = self.__class__()
+        page.need_auth = True
+        page.enable_signedurl = True
+
+        original_uri = handler.headers["X-Original-URI"]
+        if original_uri is not None:
+            request = MockHandler(handler.config)
+            request.path = original_uri
+            handler.__class__._extract_param(request)
+        else:
+            request = handler
+
+        ok = check_aaa(handler.session, page, request, request.config.signer)
+
+        if ok:
+            handler.send_page(HTTPStatus.OK, "OK")
+        else:
+            handler.send_page(HTTPStatus.UNAUTHORIZED, "UNAUTHORIZED")
 
 
 class CheckSigner(hc.http.Pages.Base):
