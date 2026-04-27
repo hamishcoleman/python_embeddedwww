@@ -11,7 +11,6 @@ import shutil
 import signal
 import socketserver
 import sys
-import urllib.parse
 import yaml
 
 from http import HTTPStatus
@@ -77,9 +76,7 @@ class PagesCamera(hc.http.Pages.Base):
     def _img2url(handler, filename):
         # Hardcodes the img url path
         path = f"/img/tn/{filename}"
-        param = handler.config.signer.create_url(path)
-        paramstr = "?" + urllib.parse.urlencode(param)
-        return path + paramstr
+        return handler.config.signer.create_url(path)
 
     def do_GET(self, handler):
         start = int(handler.param.get("start", ["0"])[0])

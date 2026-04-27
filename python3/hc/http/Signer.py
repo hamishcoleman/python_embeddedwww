@@ -2,6 +2,7 @@ import base64
 import hashlib
 import hmac
 import time
+import urllib.parse
 
 
 class Base:
@@ -38,7 +39,8 @@ class Simple(Base):
         )
         param = exp + sig
         param_enc = base64.urlsafe_b64encode(param).rstrip(b"=")
-        return {"sign": param_enc}
+        paramstr = "?" + urllib.parse.urlencode({"sign": param_enc})
+        return url + paramstr
 
     def check_signature(self, handler):
         if "sign" not in handler.param:
