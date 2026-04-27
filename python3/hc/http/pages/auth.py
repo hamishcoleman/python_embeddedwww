@@ -257,4 +257,5 @@ class CheckSigner(hc.http.Pages.Base):
     need_auth = True
 
     def do_GET(self, handler):
+        path = "/auth/check"
         handler.send_page(HTTPStatus.OK, handler.config.signer.create_url(path))
