@@ -75,7 +75,7 @@ class PagesCamera(hc.http.Pages.Base):
     @staticmethod
     def _img2url(handler, filename):
         # Hardcodes the img url path
-        path = f"/img/tn/{filename}"
+        path = f"/raw/{filename}"
         return handler.config.signer.create_url(path)
 
     def do_GET(self, handler):
@@ -137,6 +137,8 @@ class PagesCamera(hc.http.Pages.Base):
         for i in times[start_index:start_index+count]:
             this = index[i]
             dt = datetime.datetime.fromtimestamp(i)
+            # TODO: actually implement thumbnailing in the PagesImages class?
+            # thumb = "/img/tn/" + this["img"]
             img = self._img2url(handler, this["img"])
             mov = self._img2url(handler, this["mov"])
             page += [
@@ -283,6 +285,10 @@ def main():
         ),
         # "/"   - redirect either to app or to login
         "/camera": PagesCamera(config["camera"]["dir"]),
+
+        # Some endpoints are handled by nginx, but I want them on the sitemap
+        "/player.html": hc.http.Pages.Static("fake"),
+        "/raw": hc.http.Pages.Static("fake"),
     })
     webconfig.routes_subtree = {
         "/img/": PagesImages(config["camera"]["dir"]),
