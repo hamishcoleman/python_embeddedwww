@@ -18,16 +18,48 @@ def add_routes(routes):
     # consume invite link and set cookie
 
 
-def check_aaa(session, page):
-    """Check the Page attrs against the request session"""
+def check_aaa(session, page, handler, signer):
+    """
+    Applies the permission controls to the request to check if allowed
 
-    if page.need_auth:
-        if not session.has_auth:
-            return False
-    if page.need_admin:
-        if not session.has_admin:
-            return False
-    return True
+    Uses the Page attrs to see what authentication and access is allowed.
+
+    auth | auth | admin | admin | signing | signing |
+    need | has  | need  | has   | enable  | valid   | outcome
+    ---- | ---- | ----- | ----- | ------- | ------- | -------
+     f   |  x   |  x    |  x    |  x      |  x      | OK
+     t   |  t   |  f    |  x    |  x      |  x      | OK
+     t   |  t   |  t    |  f    |  f      |  x      | Forbidden
+     t   |  t   |  t    |  t    |  x      |  x      | OK
+     t   |  f   |  x    |  x    |  f      |  x      | Forbidden
+     t   |  x   |  x    |  x    |  t      |  f      | Forbidden
+     t   |  x   |  x    |  x    |  t      |  t      | OK
+    """
+
+    if not page.need_auth:
+        # Simplest case, a page that is always allowed
+        return True
+
+    # Everything else needs some form of auth
+
+    if session.has_auth:
+        if not page.need_admin:
+            return True
+        elif session.has_admin:
+            return True
+
+    # The only remaining way to succeed is with a signed url
+    if not page.enable_signedurl:
+        return False
+
+    if handler is None or signer is None:
+        # The caller doesnt expect signed urls to work (mostly sitemap)
+        return False
+
+    if signer.check_signature(handler):
+        return True
+
+    return False
 
 
 class Login(hc.http.Pages.SimpleForm):

@@ -24,7 +24,7 @@ class SiteMap(hc.http.Pages.Base):
         data += ["<ul>"]
 
         for path, page in sorted(handler.config.routes.items()):
-            if not auth.check_aaa(handler.session, page):
+            if not auth.check_aaa(handler.session, page, None, None):
                 continue
             data += [f"""
              <li><a href="{path}">{path}</a>

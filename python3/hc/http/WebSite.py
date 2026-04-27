@@ -146,17 +146,15 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
 
         # TODO: could add page.need_session and avoid getting session
         self.session = self.config.auth.request2session(self)
-        if not auth.check_aaa(self.session, self.page):
-            ok = False
-
-            if self.page.enable_signedurl:
-                # maybe request has a signature?
-                ok = self.config.signer.check_signature(self)
-
-            if not ok:
-                # TODO: increment unauth metrics
-                self.send_error(HTTPStatus.UNAUTHORIZED)
-                return
+        if not auth.check_aaa(
+                self.session,
+                self.page,
+                self,
+                self.config.signer
+        ):
+            # TODO: increment unauth metrics
+            self.send_error(HTTPStatus.UNAUTHORIZED)
+            return
 
         page_method_name = 'do_' + self.command
         if not hasattr(self.page, page_method_name):
