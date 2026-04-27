@@ -14,6 +14,7 @@ def add_routes(routes):
     routes["/auth/logout"] = Logout()
     routes["/auth/list"] = List()
     routes["/auth/check"] = Check()
+    routes["/auth/check/signer"] = CheckSigner()
     # create invite link
     # consume invite link and set cookie
 
@@ -219,3 +220,11 @@ class Check(hc.http.Pages.Base):
 
     def do_GET(self, handler):
         handler.send_page(HTTPStatus.OK, "OK")
+
+
+class CheckSigner(hc.http.Pages.Base):
+    """Returns signed url for the /auth/check endpoint. used for testing"""
+    need_auth = True
+
+    def do_GET(self, handler):
+        handler.send_page(HTTPStatus.OK, handler.config.signer.create_url(path))
